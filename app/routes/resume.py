@@ -142,22 +142,15 @@ def get_stats(db: Session = Depends(get_db)):
     }
 
 @router.get("/history")
-def get_history(email: str = None, db: Session = Depends(get_db)):
-    query = db.query(ResumeAnalysis).order_by(ResumeAnalysis.created_at.desc())
-    if email:
-        query = query.filter(ResumeAnalysis.user_email == email)
-    results = query.limit(20).all()
+def get_history(db: Session = Depends(get_db)):
+    results = db.query(ResumeAnalysis).order_by(ResumeAnalysis.created_at.desc()).limit(20).all()
 
     return {
         "history": [
             {
                 "id": r.id,
-                "filename": r.filename,
                 "ats_score": r.ats_score,
-                "strengths": r.strengths,
-                "weaknesses": r.weaknesses,
-                "suggestions": r.suggestions,
-                "improved_summary": r.improved_summary,
+                "score_breakdown": r.score_breakdown,
                 "created_at": r.created_at.isoformat() if r.created_at else None
             }
             for r in results
