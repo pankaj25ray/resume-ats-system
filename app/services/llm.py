@@ -1,13 +1,29 @@
 import requests
 import json
+import os
 
+# ═══════════════════════════════════════
+# CONFIGURATION — Switch between Local and Cloud
+# ═══════════════════════════════════════
+
+# Set to "ollama" for local development, "groq" for production
+AI_MODE = os.environ.get("AI_MODE", "ollama")
+
+# Ollama (local)
 OLLAMA_URL = "http://localhost:11434/api/generate"
-MODEL_NAME = "llama3.1:8b"
+OLLAMA_MODEL = "llama3.1:8b"
 
-def analyze_resume(resume_text: str) -> dict:
-    """Send resume to Ollama and get ATS analysis"""
+# Groq (cloud — free tier)
+GROQ_URL = "https://api.groq.com/openai/v1/chat/completions"
+GROQ_API_KEY = os.environ.get("GROQ_API_KEY", "")
+GROQ_MODEL = "llama-3.1-70b-versatile"
 
-    prompt = f"""
+# ═══════════════════════════════════════
+# PROMPT
+# ═══════════════════════════════════════
+
+def get_prompt(resume_text):
+    return f"""
 You are a professional ATS (Applicant Tracking System) expert and career coach.
 Analyze the following resume and respond ONLY with a valid JSON object.
 No explanation outside the JSON. No extra text. Just the JSON.
@@ -34,19 +50,57 @@ Respond with exactly this JSON structure:
 }}
 """
 
+# ═══════════════════════════════════════
+# OLLAMA (Local)
+# ═══════════════════════════════════════
+
+def analyze_with_ollama(resume_text):
+    prompt = get_prompt(resume_text)
+    response = requests.post(OLLAMA_URL, json={
+        "model": OLLAMA_MODEL,
+        "prompt": prompt,
+        "stream": False
+    }, timeout=120)
+    result = response.json()
+    return result.get("response", "")
+
+# ═══════════════════════════════════════
+# GROQ (Cloud — Free)
+# ═══════════════════════════════════════
+
+def analyze_with_groq(resume_text):
+    prompt = get_prompt(resume_text)
+    headers = {
+        "Authorization": f"Bearer {GROQ_API_KEY}",
+        "Content-Type": "application/json"
+    }
+    payload = {
+        "model": GROQ_MODEL,
+        "messages": [
+            {"role": "system", "content": "You are an ATS expert. Respond only with valid JSON."},
+            {"role": "user", "content": prompt}
+        ],
+        "temperature": 0.3,
+        "max_tokens": 1024
+    }
+    response = requests.post(GROQ_URL, headers=headers, json=payload, timeout=60)
+    result = response.json()
+    return result["choices"][0]["message"]["content"]
+
+# ═══════════════════════════════════════
+# MAIN FUNCTION
+# ═══════════════════════════════════════
+
+def analyze_resume(resume_text):
     try:
-        print("Sending resume to Ollama... please wait")
-        
-        response = requests.post(OLLAMA_URL, json={
-            "model": MODEL_NAME,
-            "prompt": prompt,
-            "stream": False
-        }, timeout=120)
+        print(f"Using AI mode: {AI_MODE}")
 
-        result = response.json()
-        raw_text = result.get("response", "")
+        if AI_MODE == "groq":
+            raw_text = analyze_with_groq(resume_text)
+        else:
+            raw_text = analyze_with_ollama(resume_text)
 
-        print("Response received from Ollama ✅")
+        print("Response received ✅")
 
         # Extract JSON from response
         start = raw_text.find("{")
