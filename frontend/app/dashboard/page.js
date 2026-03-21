@@ -5,57 +5,43 @@ import Navbar from '../components/Navbar';
 const API_URL = 'https://resume-ats-backend-drnu.onrender.com/api/v1/resume';
 
 /* ═══════════════════════════════════════
-   REVEAL HOOK
-   ═══════════════════════════════════════ */
-function useReveal(threshold = 0.15) {
-  const ref = useRef(null);
-  const [visible, setVisible] = useState(false);
-  useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    const obs = new IntersectionObserver(([e]) => { if (e.isIntersecting) { setVisible(true); obs.unobserve(el); } }, { threshold });
-    obs.observe(el);
-    return () => obs.disconnect();
-  }, [threshold]);
-  return [ref, visible];
-}
-
-/* ═══════════════════════════════════════
-   SCORE DISTRIBUTION (Horizontal bars)
+   SCORE DISTRIBUTION
    ═══════════════════════════════════════ */
 function ScoreDistribution({ history, animated }) {
   const ranges = [
     { label: '90-100', min: 90, max: 100, color: '#0071E3' },
-    { label: '80-89', min: 80, max: 89, color: 'var(--green)' },
+    { label: '80-89', min: 80, max: 89, color: '#34C759' },
     { label: '70-79', min: 70, max: 79, color: '#5AC8FA' },
-    { label: '60-69', min: 60, max: 69, color: 'var(--amber)' },
+    { label: '60-69', min: 60, max: 69, color: '#FF9F0A' },
     { label: '50-59', min: 50, max: 59, color: '#FF9500' },
-    { label: '0-49', min: 0, max: 49, color: 'var(--red)' },
+    { label: '0-49', min: 0, max: 49, color: '#FF3B30' },
   ];
   const counts = ranges.map(r => ({
     ...r,
     count: history.filter(h => h.ats_score >= r.min && h.ats_score <= r.max).length
   }));
-  const maxCount = Math.max(...counts.map(c => c.count), 1);
+  const total = history.length || 1;
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-      {counts.map((r, i) => (
-        <div key={r.label} style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <span style={{ fontFamily: 'var(--font-body)', fontSize: 12, color: 'var(--text-secondary)', width: 45, textAlign: 'right' }}>{r.label}</span>
-          <div style={{ flex: 1, height: 24, background: 'rgba(0,0,0,0.03)', borderRadius: 6, overflow: 'hidden' }}>
-            <div style={{
-              height: '100%', borderRadius: 6, background: r.color,
-              width: animated ? `${(r.count / maxCount) * 100}%` : '0%',
-              transition: `width 0.8s cubic-bezier(0.4,0,0.2,1) ${i * 0.1}s`,
-              minWidth: r.count > 0 ? 24 : 0,
-              display: 'flex', alignItems: 'center', justifyContent: 'flex-end', paddingRight: 8,
-            }}>
-              {r.count > 0 && <span style={{ fontFamily: 'var(--font-body)', fontSize: 11, fontWeight: 500, color: '#fff' }}>{r.count}</span>}
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+      {counts.map((r, i) => {
+        const pct = (r.count / total) * 100;
+        return (
+          <div key={r.label} style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <span style={{ fontFamily: 'var(--font-body)', fontSize: 12, color: 'var(--text-secondary)', width: 48, textAlign: 'right', flexShrink: 0 }}>{r.label}</span>
+            <div style={{ flex: 1, height: 28, background: 'rgba(0,0,0,0.03)', borderRadius: 8, overflow: 'hidden' }}>
+              <div style={{
+                height: '100%', borderRadius: 8, background: r.color,
+                width: animated ? `${Math.max(pct, r.count > 0 ? 15 : 0)}%` : '0%',
+                transition: `width 1s cubic-bezier(0.4,0,0.2,1) ${i * 0.12}s`,
+                display: 'flex', alignItems: 'center', paddingLeft: 10,
+              }}>
+                {r.count > 0 && <span style={{ fontFamily: 'var(--font-body)', fontSize: 12, fontWeight: 500, color: '#fff' }}>{r.count} resumes</span>}
+              </div>
             </div>
           </div>
-        </div>
-      ))}
+        );
+      })}
     </div>
   );
 }
@@ -67,43 +53,39 @@ function ScoreTrend({ history, animated }) {
   const recent = [...history].slice(0, 10).reverse();
 
   if (recent.length === 0) {
-    return <p style={{ fontFamily: 'var(--font-body)', fontSize: 14, color: 'var(--text-tertiary)', textAlign: 'center', padding: '60px 0' }}>No data yet — upload resumes to see trends</p>;
+    return <p style={{ fontFamily: 'var(--font-body)', fontSize: 14, color: 'var(--text-tertiary)', textAlign: 'center', padding: '60px 0' }}>No data yet</p>;
   }
-
-  const maxScore = 100;
 
   return (
     <div>
-      {/* Chart */}
-      <div style={{ display: 'flex', alignItems: 'flex-end', gap: 6, height: 150, padding: '0 4px' }}>
+      <div style={{ display: 'flex', alignItems: 'flex-end', gap: 6, height: 160, padding: '0 4px' }}>
         {recent.map((d, i) => {
-          const height = Math.max((d.ats_score / maxScore) * 130, 4);
-          const color = d.ats_score >= 80 ? 'var(--green)' : d.ats_score >= 60 ? 'var(--accent)' : d.ats_score >= 40 ? 'var(--amber)' : 'var(--red)';
+          const height = Math.max((d.ats_score / 100) * 140, 8);
+          const color = d.ats_score >= 80 ? '#34C759' : d.ats_score >= 60 ? '#0071E3' : d.ats_score >= 40 ? '#FF9F0A' : '#FF3B30';
           return (
             <div key={i} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
               <span style={{
                 fontFamily: 'var(--font-body)', fontSize: 11, fontWeight: 500, color: 'var(--text-primary)',
                 opacity: animated ? 1 : 0,
-                transition: `opacity 0.4s ease ${i * 0.08 + 0.5}s`,
+                transition: `opacity 0.5s ease ${i * 0.1 + 0.8}s`,
               }}>
                 {d.ats_score}
               </span>
               <div style={{
-                width: '100%', maxWidth: 32, borderRadius: '6px 6px 2px 2px',
+                width: '100%', maxWidth: 36, borderRadius: '6px 6px 2px 2px',
                 background: color,
                 height: animated ? height : 0,
-                transition: `height 0.8s cubic-bezier(0.4,0,0.2,1) ${i * 0.08}s`,
+                transition: `height 0.8s cubic-bezier(0.4,0,0.2,1) ${i * 0.1}s`,
               }} />
             </div>
           );
         })}
       </div>
-      {/* Labels */}
-      <div style={{ display: 'flex', gap: 6, padding: '6px 4px 0', borderTop: '0.5px solid var(--border-light)', marginTop: 8 }}>
+      <div style={{ display: 'flex', gap: 6, padding: '8px 4px 0', borderTop: '0.5px solid rgba(0,0,0,0.06)', marginTop: 8 }}>
         {recent.map((d, i) => (
           <div key={i} style={{ flex: 1, textAlign: 'center' }}>
             <span style={{ fontFamily: 'var(--font-body)', fontSize: 9, color: 'var(--text-tertiary)' }}>
-              {d.created_at ? new Date(d.created_at).toLocaleDateString('en', { day: 'numeric', month: 'short' }) : `#${i+1}`}
+              {d.created_at ? new Date(d.created_at).toLocaleDateString('en', { day: 'numeric', month: 'short' }) : `#${i + 1}`}
             </span>
           </div>
         ))}
@@ -113,27 +95,31 @@ function ScoreTrend({ history, animated }) {
 }
 
 /* ═══════════════════════════════════════
-   SCORE RING (with counter animation)
+   SCORE RING
    ═══════════════════════════════════════ */
 function ScoreRing({ score, size = 120 }) {
-  const [animated, setAnimated] = useState(false);
   const [displayScore, setDisplayScore] = useState(0);
+  const [ringAnimated, setRingAnimated] = useState(false);
   const circumference = 2 * Math.PI * 36;
   const offset = circumference - (score / 100) * circumference;
-  const color = score >= 80 ? 'var(--green)' : score >= 60 ? 'var(--accent)' : score >= 40 ? 'var(--amber)' : 'var(--red)';
+  const color = score >= 80 ? '#34C759' : score >= 60 ? '#0071E3' : score >= 40 ? '#FF9F0A' : '#FF3B30';
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setAnimated(true);
+    if (score <= 0) return;
+    const delay = setTimeout(() => {
+      setRingAnimated(true);
       let current = 0;
       const interval = setInterval(() => {
-        current = Math.min(current + 1, score);
+        current += 1;
+        if (current > score) {
+          current = score;
+          clearInterval(interval);
+        }
         setDisplayScore(current);
-        if (current >= score) clearInterval(interval);
-      }, 20);
+      }, 18);
       return () => clearInterval(interval);
-    }, 500);
-    return () => clearTimeout(timer);
+    }, 600);
+    return () => clearTimeout(delay);
   }, [score]);
 
   return (
@@ -142,14 +128,13 @@ function ScoreRing({ score, size = 120 }) {
         <circle cx="50" cy="50" r="36" fill="none" stroke="rgba(0,0,0,0.04)" strokeWidth="7" />
         <circle cx="50" cy="50" r="36" fill="none" stroke={color} strokeWidth="7"
           strokeLinecap="round" strokeDasharray={circumference}
-          strokeDashoffset={animated ? offset : circumference}
+          strokeDashoffset={ringAnimated ? offset : circumference}
           style={{ transition: 'stroke-dashoffset 1.5s cubic-bezier(0.4,0,0.2,1)' }}
         />
       </svg>
       <div style={{
         position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)',
-        fontFamily: 'var(--font-display)', fontSize: 24, fontWeight: 500,
-        color: 'var(--text-primary)',
+        fontFamily: 'var(--font-display)', fontSize: 26, fontWeight: 500, color: 'var(--text-primary)',
       }}>
         {displayScore}
       </div>
@@ -158,11 +143,11 @@ function ScoreRing({ score, size = 120 }) {
 }
 
 /* ═══════════════════════════════════════
-   CATEGORY BREAKDOWN BARS
+   CATEGORY BARS
    ═══════════════════════════════════════ */
 function CategoryBars({ breakdown, animated }) {
   if (!breakdown || Object.keys(breakdown).length === 0) {
-    return <p style={{ fontFamily: 'var(--font-body)', fontSize: 14, color: 'var(--text-tertiary)' }}>Upload a new resume to see breakdown</p>;
+    return <p style={{ fontFamily: 'var(--font-body)', fontSize: 14, color: 'var(--text-tertiary)' }}>Upload a resume to see breakdown</p>;
   }
   const maxScores = { keyword_relevance: 25, formatting: 20, section_completeness: 15, quantification: 15, action_verbs: 10, grammar_clarity: 10, length_density: 5 };
 
@@ -171,7 +156,7 @@ function CategoryBars({ breakdown, animated }) {
       {Object.entries(breakdown).map(([key, value], i) => {
         const max = maxScores[key] || 10;
         const pct = (value / max) * 100;
-        const color = pct >= 80 ? 'var(--green)' : pct >= 60 ? 'var(--accent)' : 'var(--amber)';
+        const color = pct >= 80 ? '#34C759' : pct >= 60 ? '#0071E3' : '#FF9F0A';
         const label = key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
         return (
           <div key={key}>
@@ -179,11 +164,11 @@ function CategoryBars({ breakdown, animated }) {
               <span style={{ fontFamily: 'var(--font-body)', fontSize: 13, color: 'var(--text-secondary)' }}>{label}</span>
               <span style={{ fontFamily: 'var(--font-body)', fontSize: 12, fontWeight: 500, color: 'var(--text-primary)' }}>{value}/{max}</span>
             </div>
-            <div style={{ height: 5, background: 'rgba(0,0,0,0.04)', borderRadius: 3, overflow: 'hidden' }}>
+            <div style={{ height: 6, background: 'rgba(0,0,0,0.04)', borderRadius: 3, overflow: 'hidden' }}>
               <div style={{
                 height: '100%', borderRadius: 3, background: color,
                 width: animated ? `${pct}%` : '0%',
-                transition: `width 1s cubic-bezier(0.4,0,0.2,1) ${i * 0.08}s`,
+                transition: `width 1s cubic-bezier(0.4,0,0.2,1) ${i * 0.1}s`,
               }} />
             </div>
           </div>
@@ -198,20 +183,20 @@ function CategoryBars({ breakdown, animated }) {
    ═══════════════════════════════════════ */
 function PercentileGauge({ percentile, animated }) {
   return (
-    <div style={{ position: 'relative' }}>
-      <div style={{ height: 8, background: 'rgba(0,0,0,0.04)', borderRadius: 4, overflow: 'hidden', position: 'relative' }}>
+    <div>
+      <div style={{ height: 10, background: 'rgba(0,0,0,0.04)', borderRadius: 5, overflow: 'hidden', position: 'relative' }}>
         <div style={{
           position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
-          background: 'linear-gradient(90deg, var(--red) 0%, var(--amber) 30%, var(--green) 70%, var(--accent) 100%)',
-          opacity: 0.2, borderRadius: 4,
+          background: 'linear-gradient(90deg, #FF3B30 0%, #FF9F0A 30%, #34C759 70%, #0071E3 100%)',
+          opacity: 0.2, borderRadius: 5,
         }} />
         <div style={{
-          position: 'absolute', top: -4, width: 16, height: 16,
-          borderRadius: '50%', background: 'var(--accent)',
-          border: '3px solid var(--surface-card)',
-          boxShadow: '0 1px 4px rgba(0,0,0,0.15)',
+          position: 'absolute', top: -3, width: 16, height: 16,
+          borderRadius: '50%', background: '#0071E3',
+          border: '3px solid #fff',
+          boxShadow: '0 1px 4px rgba(0,0,0,0.2)',
           left: animated ? `calc(${percentile}% - 8px)` : '0%',
-          transition: 'left 1.5s cubic-bezier(0.4,0,0.2,1)',
+          transition: 'left 1.5s cubic-bezier(0.4,0,0.2,1) 0.3s',
         }} />
       </div>
       <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 12 }}>
@@ -227,11 +212,11 @@ function PercentileGauge({ percentile, animated }) {
    MAIN DASHBOARD
    ═══════════════════════════════════════ */
 export default function DashboardPage() {
-  const [ref, visible] = useReveal(0.1);
   const [stats, setStats] = useState(null);
   const [history, setHistory] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [pageReady, setPageReady] = useState(false);
 
   useEffect(() => {
     async function fetchData() {
@@ -249,6 +234,7 @@ export default function DashboardPage() {
         setError('Could not load data. Backend may be starting — try again in 30 seconds.');
       } finally {
         setLoading(false);
+        setTimeout(() => setPageReady(true), 300);
       }
     }
     fetchData();
@@ -281,11 +267,7 @@ export default function DashboardPage() {
       <main style={{ minHeight: '100vh', background: 'var(--surface)' }}>
         <Navbar />
         <div style={{ maxWidth: 1000, margin: '0 auto', padding: '120px 24px 80px', textAlign: 'center' }}>
-          <div style={{
-            width: 48, height: 48, borderRadius: '50%', margin: '0 auto 20px',
-            border: '3px solid rgba(0,113,227,0.12)', borderTopColor: 'var(--accent)',
-            animation: 'spin 1.2s linear infinite',
-          }} />
+          <div style={{ width: 48, height: 48, borderRadius: '50%', margin: '0 auto 20px', border: '3px solid rgba(0,113,227,0.12)', borderTopColor: '#0071E3', animation: 'spin 1.2s linear infinite' }} />
           <p style={{ fontFamily: 'var(--font-body)', fontSize: 16, color: 'var(--text-secondary)' }}>Loading dashboard...</p>
         </div>
       </main>
@@ -299,54 +281,53 @@ export default function DashboardPage() {
       <div style={{ maxWidth: 1060, margin: '0 auto', padding: '120px 24px 80px' }}>
         {/* Header */}
         <div className="animate-fade-up" style={{ marginBottom: 40 }}>
-          <div style={{ fontFamily: 'var(--font-body)', fontSize: 12, fontWeight: 500, color: 'var(--accent)', textTransform: 'uppercase', letterSpacing: 1.5, marginBottom: 12 }}>Dashboard</div>
+          <div style={{ fontFamily: 'var(--font-body)', fontSize: 12, fontWeight: 500, color: '#0071E3', textTransform: 'uppercase', letterSpacing: 1.5, marginBottom: 12 }}>Dashboard</div>
           <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 44, fontWeight: 400, letterSpacing: -1, marginBottom: 8 }}>Resume analytics</h1>
           <p style={{ fontFamily: 'var(--font-body)', fontSize: 16, color: 'var(--text-secondary)' }}>{totalResumes} resumes analyzed — all data is anonymous</p>
         </div>
 
         {error && (
-          <div style={{ padding: '16px 20px', marginBottom: 24, background: 'rgba(255,159,10,0.06)', border: '0.5px solid rgba(255,159,10,0.15)', borderRadius: 'var(--radius-md)', fontFamily: 'var(--font-body)', fontSize: 14, color: 'var(--amber)' }}>{error}</div>
+          <div style={{ padding: '16px 20px', marginBottom: 24, background: 'rgba(255,159,10,0.06)', border: '0.5px solid rgba(255,159,10,0.15)', borderRadius: 12, fontFamily: 'var(--font-body)', fontSize: 14, color: '#FF9F0A' }}>{error}</div>
         )}
 
-        {/* Row 1 — Key Metrics */}
-        <div ref={ref} style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 14, marginBottom: 20 }}>
+        {/* Row 1 — Metrics */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 14, marginBottom: 20 }}>
           {[
-            { label: 'Latest score', value: `${latestScore}`, sublabel: 'out of 100', color: 'var(--accent)' },
-            { label: 'Average', value: `${avgScore}`, sublabel: 'all resumes', color: 'var(--purple)' },
-            { label: 'Highest', value: `${highestScore}`, sublabel: 'best score', color: 'var(--green)' },
-            { label: 'Lowest', value: `${lowestScore}`, sublabel: 'weakest score', color: 'var(--red)' },
-            { label: 'Total', value: `${totalResumes}`, sublabel: 'resumes', color: 'var(--amber)' },
-          ].map((stat, i) => (
-            <div key={stat.label} className="animate-fade-up" style={{
-              background: 'var(--surface-card)', border: '0.5px solid var(--border-light)',
-              borderRadius: 'var(--radius-lg)', padding: '20px',
-              animationDelay: `${0.1 + i * 0.08}s`, transition: 'all 0.3s',
+            { label: 'Latest score', value: `${latestScore}`, sub: 'out of 100', color: '#0071E3' },
+            { label: 'Average', value: `${avgScore}`, sub: 'all resumes', color: '#AF52DE' },
+            { label: 'Highest', value: `${highestScore}`, sub: 'best score', color: '#34C759' },
+            { label: 'Lowest', value: `${lowestScore}`, sub: 'weakest', color: '#FF3B30' },
+            { label: 'Total', value: `${totalResumes}`, sub: 'resumes', color: '#FF9F0A' },
+          ].map((s, i) => (
+            <div key={s.label} className="animate-fade-up" style={{
+              background: '#fff', border: '0.5px solid rgba(0,0,0,0.06)', borderRadius: 16, padding: '20px',
+              animationDelay: `${0.1 + i * 0.08}s`, transition: 'all 0.3s', cursor: 'default',
             }}
-            onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = 'var(--shadow-md)'; }}
+            onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.06)'; }}
             onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = 'none'; }}
             >
-              <div style={{ fontFamily: 'var(--font-body)', fontSize: 11, color: 'var(--text-tertiary)', marginBottom: 6 }}>{stat.label}</div>
-              <div style={{ fontFamily: 'var(--font-display)', fontSize: 28, fontWeight: 500, color: stat.color, letterSpacing: -0.5 }}>{stat.value}</div>
-              <div style={{ fontFamily: 'var(--font-body)', fontSize: 11, color: 'var(--text-tertiary)', marginTop: 2 }}>{stat.sublabel}</div>
+              <div style={{ fontFamily: 'var(--font-body)', fontSize: 11, color: 'var(--text-tertiary)', marginBottom: 6 }}>{s.label}</div>
+              <div style={{ fontFamily: 'var(--font-display)', fontSize: 28, fontWeight: 500, color: s.color, letterSpacing: -0.5 }}>{s.value}</div>
+              <div style={{ fontFamily: 'var(--font-body)', fontSize: 11, color: 'var(--text-tertiary)', marginTop: 2 }}>{s.sub}</div>
             </div>
           ))}
         </div>
 
-        {/* Row 2 — Score Ring + Quality Distribution + Score Trend */}
+        {/* Row 2 — Ring + Distribution + Trend */}
         <div style={{ display: 'grid', gridTemplateColumns: '220px 1fr 1.5fr', gap: 20, marginBottom: 20 }}>
-          {/* Latest Score Ring */}
+          {/* Score Ring */}
           <div className="animate-fade-up stagger-2" style={{
-            background: 'var(--surface-card)', border: '0.5px solid var(--border-light)',
-            borderRadius: 'var(--radius-xl)', padding: '24px',
+            background: '#fff', border: '0.5px solid rgba(0,0,0,0.06)', borderRadius: 20, padding: '24px',
             display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
           }}>
-            <div style={{ fontFamily: 'var(--font-body)', fontSize: 11, color: 'var(--text-tertiary)', marginBottom: 12, textTransform: 'uppercase', letterSpacing: 1 }}>Latest score</div>
-            <ScoreRing score={latestScore} size={120} />
+            <div style={{ fontFamily: 'var(--font-body)', fontSize: 11, color: 'var(--text-tertiary)', marginBottom: 16, textTransform: 'uppercase', letterSpacing: 1 }}>Latest score</div>
+            {pageReady && <ScoreRing score={latestScore} size={130} />}
+            {!pageReady && <div style={{ width: 130, height: 130 }} />}
             <div style={{
-              marginTop: 12, fontFamily: 'var(--font-body)', fontSize: 12, fontWeight: 500,
-              color: latestScore >= 80 ? 'var(--green)' : latestScore >= 60 ? 'var(--accent)' : 'var(--amber)',
+              marginTop: 14, fontFamily: 'var(--font-body)', fontSize: 12, fontWeight: 500,
+              color: latestScore >= 80 ? '#34C759' : latestScore >= 60 ? '#0071E3' : '#FF9F0A',
               background: latestScore >= 80 ? 'rgba(52,199,89,0.08)' : latestScore >= 60 ? 'rgba(0,113,227,0.08)' : 'rgba(255,159,10,0.08)',
-              padding: '4px 12px', borderRadius: 20,
+              padding: '5px 14px', borderRadius: 20,
             }}>
               {latestScore >= 80 ? 'Excellent' : latestScore >= 60 ? 'Average' : 'Needs work'}
             </div>
@@ -354,102 +335,95 @@ export default function DashboardPage() {
 
           {/* Quality Distribution */}
           <div className="animate-fade-up stagger-3" style={{
-            background: 'var(--surface-card)', border: '0.5px solid var(--border-light)',
-            borderRadius: 'var(--radius-xl)', padding: '24px',
+            background: '#fff', border: '0.5px solid rgba(0,0,0,0.06)', borderRadius: 20, padding: '24px',
           }}>
             <h3 style={{ fontFamily: 'var(--font-body)', fontSize: 14, fontWeight: 500, marginBottom: 20 }}>Quality distribution</h3>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-              {[
-                { label: 'Excellent (80+)', count: above80, color: 'var(--green)' },
-                { label: 'Average (60-79)', count: between60and80, color: 'var(--accent)' },
-                { label: 'Needs work (<60)', count: below60, color: 'var(--red)' },
-              ].map(item => (
-                <div key={item.label} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <div style={{ width: 10, height: 10, borderRadius: 3, background: item.color }} />
-                    <span style={{ fontFamily: 'var(--font-body)', fontSize: 13, color: 'var(--text-secondary)' }}>{item.label}</span>
-                  </div>
-                  <span style={{ fontFamily: 'var(--font-body)', fontSize: 15, fontWeight: 500, color: item.color }}>{item.count}</span>
+            {[
+              { label: 'Excellent (80+)', count: above80, color: '#34C759' },
+              { label: 'Average (60-79)', count: between60and80, color: '#0071E3' },
+              { label: 'Needs work (<60)', count: below60, color: '#FF3B30' },
+            ].map(item => (
+              <div key={item.label} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <div style={{ width: 10, height: 10, borderRadius: 3, background: item.color }} />
+                  <span style={{ fontFamily: 'var(--font-body)', fontSize: 13, color: 'var(--text-secondary)' }}>{item.label}</span>
                 </div>
-              ))}
-            </div>
-            <div style={{ display: 'flex', height: 8, borderRadius: 4, overflow: 'hidden', marginTop: 16, gap: 2 }}>
-              {above80 > 0 && <div style={{ flex: above80, background: 'var(--green)', borderRadius: 4 }} />}
-              {between60and80 > 0 && <div style={{ flex: between60and80, background: 'var(--accent)', borderRadius: 4 }} />}
-              {below60 > 0 && <div style={{ flex: below60, background: 'var(--red)', borderRadius: 4 }} />}
+                <span style={{ fontFamily: 'var(--font-body)', fontSize: 16, fontWeight: 500, color: item.color }}>{item.count}</span>
+              </div>
+            ))}
+            <div style={{ display: 'flex', height: 10, borderRadius: 5, overflow: 'hidden', marginTop: 8, gap: 2 }}>
+              {above80 > 0 && <div style={{ flex: above80, background: '#34C759', borderRadius: 5 }} />}
+              {between60and80 > 0 && <div style={{ flex: between60and80, background: '#0071E3', borderRadius: 5 }} />}
+              {below60 > 0 && <div style={{ flex: below60, background: '#FF3B30', borderRadius: 5 }} />}
             </div>
             <div style={{ fontFamily: 'var(--font-body)', fontSize: 12, color: 'var(--text-tertiary)', marginTop: 12, textAlign: 'center' }}>
-              {totalResumes > 0 ? `${Math.round((above80 / totalResumes) * 100)}% of resumes score 80+` : ''}
+              {totalResumes > 0 ? `${Math.round((above80 / totalResumes) * 100)}% score 80+` : ''}
             </div>
           </div>
 
           {/* Score Trend */}
           <div className="animate-fade-up stagger-4" style={{
-            background: 'var(--surface-card)', border: '0.5px solid var(--border-light)',
-            borderRadius: 'var(--radius-xl)', padding: '24px',
+            background: '#fff', border: '0.5px solid rgba(0,0,0,0.06)', borderRadius: 20, padding: '24px',
           }}>
             <h3 style={{ fontFamily: 'var(--font-body)', fontSize: 14, fontWeight: 500, marginBottom: 16 }}>Score trend (last 10)</h3>
-            <ScoreTrend history={history} animated={visible} />
+            {pageReady && <ScoreTrend history={history} animated={pageReady} />}
+            {!pageReady && <div style={{ height: 160 }} />}
           </div>
         </div>
 
-        {/* Row 3 — Score Distribution + Average Category Breakdown */}
+        {/* Row 3 — Distribution + Categories */}
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20, marginBottom: 20 }}>
           <div className="animate-fade-up stagger-5" style={{
-            background: 'var(--surface-card)', border: '0.5px solid var(--border-light)',
-            borderRadius: 'var(--radius-xl)', padding: '28px',
+            background: '#fff', border: '0.5px solid rgba(0,0,0,0.06)', borderRadius: 20, padding: '28px',
           }}>
             <h3 style={{ fontFamily: 'var(--font-body)', fontSize: 15, fontWeight: 500, marginBottom: 20 }}>Score distribution</h3>
-            <ScoreDistribution history={history} animated={visible} />
+            <ScoreDistribution history={history} animated={pageReady} />
           </div>
 
           <div className="animate-fade-up stagger-6" style={{
-            background: 'var(--surface-card)', border: '0.5px solid var(--border-light)',
-            borderRadius: 'var(--radius-xl)', padding: '28px',
+            background: '#fff', border: '0.5px solid rgba(0,0,0,0.06)', borderRadius: 20, padding: '28px',
           }}>
             <h3 style={{ fontFamily: 'var(--font-body)', fontSize: 15, fontWeight: 500, marginBottom: 4 }}>Average category scores</h3>
-            <p style={{ fontFamily: 'var(--font-body)', fontSize: 12, color: 'var(--text-tertiary)', marginBottom: 20 }}>Across {allBreakdowns.length} resumes with breakdown data</p>
-            <CategoryBars breakdown={Object.keys(avgBreakdown).length > 0 ? avgBreakdown : latestBreakdown} animated={visible} />
+            <p style={{ fontFamily: 'var(--font-body)', fontSize: 12, color: 'var(--text-tertiary)', marginBottom: 20 }}>Across {allBreakdowns.length} resumes</p>
+            <CategoryBars breakdown={Object.keys(avgBreakdown).length > 0 ? avgBreakdown : latestBreakdown} animated={pageReady} />
           </div>
         </div>
 
-        {/* Row 4 — Percentile + Key Insights */}
+        {/* Row 4 — Percentile + Insights */}
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
           <div className="animate-fade-up stagger-7" style={{
-            background: 'var(--surface-card)', border: '0.5px solid var(--border-light)',
-            borderRadius: 'var(--radius-xl)', padding: '28px',
+            background: '#fff', border: '0.5px solid rgba(0,0,0,0.06)', borderRadius: 20, padding: '28px',
           }}>
             <h3 style={{ fontFamily: 'var(--font-body)', fontSize: 15, fontWeight: 500, marginBottom: 8 }}>Percentile ranking</h3>
             <p style={{ fontFamily: 'var(--font-body)', fontSize: 13, color: 'var(--text-secondary)', marginBottom: 28 }}>
               {totalResumes > 0 ? `Latest score ranks in the ${percentile}th percentile.` : 'Upload a resume to see ranking.'}
             </p>
-            <PercentileGauge percentile={percentile} animated={visible} />
+            <PercentileGauge percentile={percentile} animated={pageReady} />
             <div style={{ textAlign: 'center', marginTop: 24 }}>
-              <span style={{ fontFamily: 'var(--font-display)', fontSize: 36, fontWeight: 500, color: 'var(--accent)' }}>{percentile}th</span>
+              <span style={{ fontFamily: 'var(--font-display)', fontSize: 36, fontWeight: 500, color: '#0071E3' }}>{percentile}th</span>
               <div style={{ fontFamily: 'var(--font-body)', fontSize: 12, color: 'var(--text-tertiary)', marginTop: 2 }}>percentile</div>
             </div>
           </div>
 
           <div className="animate-fade-up stagger-8" style={{
-            background: 'var(--surface-card)', border: '0.5px solid var(--border-light)',
-            borderRadius: 'var(--radius-xl)', padding: '28px',
+            background: '#fff', border: '0.5px solid rgba(0,0,0,0.06)', borderRadius: 20, padding: '28px',
           }}>
             <h3 style={{ fontFamily: 'var(--font-body)', fontSize: 15, fontWeight: 500, marginBottom: 20 }}>Key insights</h3>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-              <div style={{ padding: '16px', background: 'rgba(0,113,227,0.04)', borderRadius: 'var(--radius-md)' }}>
-                <div style={{ fontFamily: 'var(--font-body)', fontSize: 13, fontWeight: 500, color: 'var(--accent)', marginBottom: 4 }}>Score range</div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+              <div style={{ padding: '14px 16px', background: 'rgba(0,113,227,0.04)', borderRadius: 12 }}>
+                <div style={{ fontFamily: 'var(--font-body)', fontSize: 13, fontWeight: 500, color: '#0071E3', marginBottom: 4 }}>Score range</div>
                 <div style={{ fontFamily: 'var(--font-body)', fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.5 }}>
-                  Scores range from {lowestScore} to {highestScore}, with a spread of {highestScore - lowestScore} points
+                  Scores range from {lowestScore} to {highestScore} — a spread of {highestScore - lowestScore} points
                 </div>
               </div>
-              <div style={{ padding: '16px', background: 'rgba(52,199,89,0.04)', borderRadius: 'var(--radius-md)' }}>
-                <div style={{ fontFamily: 'var(--font-body)', fontSize: 13, fontWeight: 500, color: 'var(--green)', marginBottom: 4 }}>Success rate</div>
+              <div style={{ padding: '14px 16px', background: 'rgba(52,199,89,0.04)', borderRadius: 12 }}>
+                <div style={{ fontFamily: 'var(--font-body)', fontSize: 13, fontWeight: 500, color: '#34C759', marginBottom: 4 }}>Success rate</div>
                 <div style={{ fontFamily: 'var(--font-body)', fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.5 }}>
-                  {totalResumes > 0 ? Math.round((above80 / totalResumes) * 100) : 0}% of resumes are ATS-ready (score 80+)
+                  {totalResumes > 0 ? Math.round((above80 / totalResumes) * 100) : 0}% of resumes are ATS-ready with score 80+
                 </div>
               </div>
-              <div style={{ padding: '16px', background: 'rgba(255,159,10,0.04)', borderRadius: 'var(--radius-md)' }}>
-                <div style={{ fontFamily: 'var(--font-body)', fontSize: 13, fontWeight: 500, color: 'var(--amber)', marginBottom: 4 }}>Top recommendation</div>
+              <div style={{ padding: '14px 16px', background: 'rgba(255,159,10,0.04)', borderRadius: 12 }}>
+                <div style={{ fontFamily: 'var(--font-body)', fontSize: 13, fontWeight: 500, color: '#FF9F0A', marginBottom: 4 }}>Recommendation</div>
                 <div style={{ fontFamily: 'var(--font-body)', fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.5 }}>
                   Add measurable achievements with numbers to boost scores by 10-15 points
                 </div>
@@ -458,10 +432,10 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* Privacy Notice */}
+        {/* Privacy */}
         <div style={{ textAlign: 'center', marginTop: 32, padding: '16px' }}>
           <p style={{ fontFamily: 'var(--font-body)', fontSize: 12, color: 'var(--text-tertiary)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--text-tertiary)" strokeWidth="1.5"><path d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
             All data is anonymous — no personal information is displayed
           </p>
         </div>
