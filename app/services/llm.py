@@ -16,7 +16,7 @@ OLLAMA_MODEL = "llama3.1:8b"
 # Groq (cloud — free tier)
 GROQ_URL = "https://api.groq.com/openai/v1/chat/completions"
 GROQ_API_KEY = os.environ.get("GROQ_API_KEY", "")
-GROQ_MODEL = "llama-3.1-70b-versatile"
+GROQ_MODEL = "llama-3.3-70b-versatile"
 
 # ═══════════════════════════════════════
 # PROMPT
