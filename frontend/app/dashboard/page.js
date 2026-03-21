@@ -34,9 +34,9 @@ function ScoreDistribution({ history, animated }) {
                 height: '100%', borderRadius: 8, background: r.color,
                 width: animated ? `${Math.max(pct, r.count > 0 ? 15 : 0)}%` : '0%',
                 transition: `width 1s cubic-bezier(0.4,0,0.2,1) ${i * 0.12}s`,
-                display: 'flex', alignItems: 'center', paddingLeft: 10,
+                display: 'flex', alignItems: 'center', paddingLeft: 10, position: 'relative',
               }}>
-                {r.count > 0 && <span style={{ fontFamily: 'var(--font-body)', fontSize: 12, fontWeight: 500, color: '#fff' }}>{r.count} resumes</span>}
+                {r.count > 0 && <span style={{ fontFamily: 'var(--font-body)', fontSize: 11, fontWeight: 500, color: pct > 25 ? '#fff' : r.color, position: pct > 25 ? 'static' : 'absolute', left: pct > 25 ? 'auto' : `${Math.max(pct, 15)}%`, marginLeft: pct > 25 ? 0 : 8 }}>{r.count}</span>}
               </div>
             </div>
           </div>
