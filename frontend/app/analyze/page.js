@@ -1,6 +1,7 @@
 'use client';
 import { useState, useEffect, useRef, useCallback } from 'react';
 import Navbar from '../components/Navbar';
+import Script from 'next/script';
 import Link from 'next/link';
 
 /* ═══════════════════════════════════════
@@ -201,6 +202,29 @@ export default function AnalyzePage() {
   return (
     <main style={{ minHeight: '100vh', background: 'var(--surface)' }}>
       <Navbar />
+      <Script id="structured-data" type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify({
+        "@context": "https://schema.org",
+        "@type": "WebApplication",
+        "name": "ResumeAI",
+        "description": "Free AI-powered ATS resume checker and scorer",
+        "url": "https://resume-ats-system.vercel.app",
+        "applicationCategory": "BusinessApplication",
+        "operatingSystem": "Web",
+        "offers": {
+          "@type": "Offer",
+          "price": "0",
+          "priceCurrency": "USD"
+        },
+        "featureList": [
+          "ATS Resume Scoring",
+          "AI-Powered Resume Analysis",
+          "Resume Improvement Suggestions",
+          "Score Breakdown Across 7 Categories",
+          "Free Forever"
+        ]
+      })}} />
+
+
 
       <div style={{ maxWidth: 800, margin: '0 auto', padding: '120px 24px 80px' }}>
 
