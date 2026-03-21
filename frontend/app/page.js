@@ -144,7 +144,7 @@ export default function Home() {
     { icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#34C759" strokeWidth="1.8"><path d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>, iconBg: 'rgba(52,199,89,0.08)', title: 'AI-powered rewriting', desc: 'LLaMA rewrites weak bullet points, adds missing keywords, and generates an improved professional summary.' },
     { icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#AF52DE" strokeWidth="1.8"><path d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>, iconBg: 'rgba(175,82,222,0.08)', title: 'Editable DOCX output', desc: 'Download your corrected resume as an editable Word document, ready to customize and submit.' },
     { icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#FF9F0A" strokeWidth="1.8"><path d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>, iconBg: 'rgba(255,159,10,0.08)', title: 'Score analytics', desc: 'Track your resume improvements over time with visual charts and percentile benchmarking.' },
-    { icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#FF2D55" strokeWidth="1.8"><path d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>, iconBg: 'rgba(255,45,85,0.08)', title: '100% private', desc: 'Everything runs locally on your machine via Ollama. Your resume never leaves your computer.' },
+    { icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#FF2D55" strokeWidth="1.8"><path d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>, iconBg: 'rgba(255,45,85,0.08)', title: '100% private', desc: 'Your resume is processed securely. Privacy-first architecture with encrypted connections..' },
     { icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#5AC8FA" strokeWidth="1.8"><path d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>, iconBg: 'rgba(90,200,250,0.08)', title: 'Zero cost', desc: 'No API keys, no subscriptions. Built entirely on free-tier tools — Ollama, FastAPI, and Next.js.' },
   ];
 
@@ -162,7 +162,7 @@ export default function Home() {
           padding: '6px 14px', borderRadius: 20,
         }}>
           <div style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--accent)', animation: 'pulse 2s infinite' }} />
-          Powered by local AI — 100% private
+          Powered by AI — Free, fast, and intelligent
         </div>
 
         {/* Headline */}
@@ -185,7 +185,7 @@ export default function Home() {
           fontFamily: 'var(--font-body)', fontSize: 19, color: 'var(--text-secondary)',
           lineHeight: 1.6, maxWidth: 520, margin: '24px auto 0',
         }}>
-          Upload your resume and get an instant ATS score, detailed breakdown, and an AI-rewritten version — all running locally on your machine.
+          Upload your resume and let AI score it instantly across 7 ATS dimensions — get detailed feedback, smart suggestions, and an AI-rewritten summary in seconds.
         </p>
 
         {/* Buttons */}
@@ -368,7 +368,7 @@ export default function Home() {
             Ready to beat the ATS?
           </h2>
           <p style={{ fontFamily: 'var(--font-body)', fontSize: 16, color: 'rgba(255,255,255,0.6)', marginBottom: 32, position: 'relative', zIndex: 1 }}>
-            Upload your resume now and see exactly how recruiters' software sees you.
+            Join thousands of job seekers using AI to land more interviews. Free forever.
           </p>
           <Link href="/analyze">
             <button style={{
@@ -395,7 +395,7 @@ export default function Home() {
         maxWidth: 1100, margin: '0 auto',
       }}>
         <div style={{ fontFamily: 'var(--font-body)', fontSize: 13, color: 'var(--text-tertiary)' }}>
-          ResumeAI — Built with LLaMA 3.1, FastAPI, Next.js
+          ResumeAI — Powered by Advanced AI
         </div>
         <div style={{ display: 'flex', gap: 24 }}>
           {['Privacy', 'GitHub', 'Contact'].map(link => (
