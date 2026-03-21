@@ -25,7 +25,8 @@ function useReveal(threshold = 0.12) {
 function useCountUp(target, duration = 1200, active = false) {
   const [count, setCount] = useState(0);
   useEffect(() => {
-    if (!active || target === 0) { setCount(target === 0 ? 0 : count); return; }
+    if (!active) { setCount(0); return; }
+    if (target === 0) { setCount(0); return; }
     let start = 0;
     const step = Math.max(1, Math.ceil(target / (duration / 16)));
     const interval = setInterval(() => {
@@ -79,8 +80,9 @@ function ScoreRing({ score, animated }) {
    STAT PILL
    ═══════════════════════════════════════ */
 function StatPill({ label, value, sublabel, color, delay, animated }) {
-  const displayVal = useCountUp(parseInt(value) || 0, 1000, animated);
+  const numVal = parseFloat(value) || 0;
   const isDecimal = String(value).includes('.');
+  const displayVal = useCountUp(isDecimal ? 0 : Math.round(numVal), 1000, animated);
 
   return (
     <div style={{
@@ -91,7 +93,7 @@ function StatPill({ label, value, sublabel, color, delay, animated }) {
       position: 'relative', overflow: 'hidden',
     }}
     onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-3px)'; e.currentTarget.style.boxShadow = '0 8px 24px rgba(0,0,0,0.06)'; }}
-    onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = 'none'; }}
+    onMouseLeave={e => { e.currentTarget.style.transform = animated ? 'translateY(0)' : 'translateY(16px)'; e.currentTarget.style.boxShadow = 'none'; }}
     >
       <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: 3, background: color, borderRadius: '12px 12px 0 0' }} />
       <div style={{ fontFamily: 'var(--font-body)', fontSize: 11, color: 'var(--text-tertiary)', letterSpacing: 0.3, marginBottom: 8 }}>{label}</div>
@@ -104,7 +106,7 @@ function StatPill({ label, value, sublabel, color, delay, animated }) {
 }
 
 /* ═══════════════════════════════════════
-   DONUT CHART (Quality Split)
+   DONUT CHART
    ═══════════════════════════════════════ */
 function DonutChart({ excellent, average, low, total, animated }) {
   const size = 130;
@@ -116,7 +118,6 @@ function DonutChart({ excellent, average, low, total, animated }) {
   const pctAverage = total > 0 ? average / total : 0;
   const pctLow = total > 0 ? low / total : 0;
 
-  const offset1 = 0;
   const offset2 = pctExcellent * circumference;
   const offset3 = (pctExcellent + pctAverage) * circumference;
 
@@ -171,10 +172,10 @@ function DonutChart({ excellent, average, low, total, animated }) {
 }
 
 /* ═══════════════════════════════════════
-   SCORE TIMELINE (SVG Dot + Line)
+   SCORE TIMELINE (SVG Curve)
    ═══════════════════════════════════════ */
 function ScoreTimeline({ history, animated }) {
-  const data = [...history].slice(0, 12).reverse();
+  const data = [...history].filter(h => h && typeof h.ats_score === 'number').slice(0, 12).reverse();
   if (data.length === 0) return <p style={{ fontFamily: 'var(--font-body)', fontSize: 13, color: 'var(--text-tertiary)', textAlign: 'center', padding: '50px 0' }}>No scores yet</p>;
 
   const h = 180;
@@ -190,7 +191,6 @@ function ScoreTimeline({ history, animated }) {
     score: d.ats_score,
   }));
 
-  // Smooth curve path
   let path = `M ${points[0].x} ${points[0].y}`;
   for (let i = 1; i < points.length; i++) {
     const cp1x = points[i-1].x + (points[i].x - points[i-1].x) * 0.4;
@@ -200,7 +200,6 @@ function ScoreTimeline({ history, animated }) {
     path += ` C ${cp1x} ${cp1y}, ${cp2x} ${cp2y}, ${points[i].x} ${points[i].y}`;
   }
 
-  // Gradient fill path
   const fillPath = path + ` L ${points[points.length-1].x} ${h - padY} L ${points[0].x} ${h - padY} Z`;
 
   return (
@@ -211,7 +210,6 @@ function ScoreTimeline({ history, animated }) {
           <stop offset="100%" stopColor="#0071E3" stopOpacity="0" />
         </linearGradient>
       </defs>
-      {/* Grid lines */}
       {[20, 40, 60, 80, 100].map(val => {
         const y = padY + innerH - ((val / 100) * innerH);
         return (
@@ -221,26 +219,14 @@ function ScoreTimeline({ history, animated }) {
           </g>
         );
       })}
-      {/* Fill area */}
-      <path d={fillPath} fill="url(#lineGrad)"
-        opacity={animated ? 1 : 0} style={{ transition: 'opacity 1s ease 0.3s' }}
-      />
-      {/* Line */}
-      <path d={path} fill="none" stroke="#0071E3" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
-        opacity={animated ? 1 : 0} style={{ transition: 'opacity 0.8s ease 0.2s' }}
-      />
-      {/* Dots */}
+      <path d={fillPath} fill="url(#lineGrad)" opacity={animated ? 1 : 0} style={{ transition: 'opacity 1s ease 0.3s' }} />
+      <path d={path} fill="none" stroke="#0071E3" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" opacity={animated ? 1 : 0} style={{ transition: 'opacity 0.8s ease 0.2s' }} />
       {points.map((p, i) => {
         const color = p.score >= 80 ? '#34C759' : p.score >= 60 ? '#0071E3' : p.score >= 40 ? '#FF9F0A' : '#FF3B30';
         return (
           <g key={i}>
-            <circle cx={p.x} cy={p.y} r={animated ? 5 : 0} fill="#fff" stroke={color} strokeWidth="2.5"
-              style={{ transition: `r 0.3s ease ${0.3 + i * 0.06}s` }}
-            />
-            <text x={p.x} y={p.y - 12} textAnchor="middle"
-              style={{ fontFamily: 'var(--font-body)', fontSize: 10, fontWeight: 500, fill: 'var(--text-primary)',
-                opacity: animated ? 1 : 0, transition: `opacity 0.3s ease ${0.5 + i * 0.06}s` }}
-            >{p.score}</text>
+            <circle cx={p.x} cy={p.y} r={animated ? 5 : 0} fill="#fff" stroke={color} strokeWidth="2.5" style={{ transition: `r 0.3s ease ${0.3 + i * 0.06}s` }} />
+            <text x={p.x} y={p.y - 12} textAnchor="middle" style={{ fontFamily: 'var(--font-body)', fontSize: 10, fontWeight: 500, fill: 'var(--text-primary)', opacity: animated ? 1 : 0, transition: `opacity 0.3s ease ${0.5 + i * 0.06}s` }}>{p.score}</text>
           </g>
         );
       })}
@@ -249,7 +235,7 @@ function ScoreTimeline({ history, animated }) {
 }
 
 /* ═══════════════════════════════════════
-   HORIZONTAL DISTRIBUTION BARS
+   DISTRIBUTION BARS
    ═══════════════════════════════════════ */
 function DistributionBars({ history, animated }) {
   const ranges = [
@@ -285,10 +271,10 @@ function DistributionBars({ history, animated }) {
 }
 
 /* ═══════════════════════════════════════
-   CATEGORY RADAR BARS
+   CATEGORY BARS
    ═══════════════════════════════════════ */
 function CategoryRadar({ breakdown, animated }) {
-  if (!breakdown || Object.keys(breakdown).length === 0) {
+  if (!breakdown || typeof breakdown !== 'object' || Object.keys(breakdown).length === 0) {
     return <p style={{ fontFamily: 'var(--font-body)', fontSize: 13, color: 'var(--text-tertiary)' }}>Upload a resume to see category scores</p>;
   }
   const maxScores = { keyword_relevance: 25, formatting: 20, section_completeness: 15, quantification: 15, action_verbs: 10, grammar_clarity: 10, length_density: 5 };
@@ -371,38 +357,52 @@ export default function DashboardPage() {
           fetch(`${API_URL}/stats`),
           fetch(`${API_URL}/history`)
         ]);
-        setStats(await statsRes.json());
-        const hd = await historyRes.json();
-        setHistory(hd.history || []);
-      } catch { setError('Backend may be waking up — refresh in 30 seconds.'); }
-      finally { setLoading(false); }
+        const statsData = await statsRes.json();
+        const historyData = await historyRes.json();
+        setStats(statsData || {});
+        setHistory(Array.isArray(historyData.history) ? historyData.history : []);
+      } catch (err) {
+        console.error('Fetch error:', err);
+        setError('Backend may be waking up — refresh in 30 seconds.');
+      } finally {
+        setLoading(false);
+      }
     }
     fetchData();
   }, []);
 
-  const latest = history.length > 0 ? history[0].ats_score : 0;
+  const latest = (history.length > 0 && history[0]) ? (history[0].ats_score || 0) : 0;
   const total = stats?.total_resumes || 0;
   const avg = stats?.average_score || 0;
   const high = stats?.highest_score || 0;
   const low = stats?.lowest_score || 0;
   const percentile = total > 0 ? Math.min(Math.round((latest / 100) * 100), 99) : 0;
-  const latestBreakdown = history.length > 0 ? history[0].score_breakdown : null;
 
-  const above80 = history.filter(h => h.ats_score >= 80).length;
-  const between60and80 = history.filter(h => h.ats_score >= 60 && h.ats_score < 80).length;
-  const below60 = history.filter(h => h.ats_score < 60).length;
+  const latestBreakdown = (history.length > 0 && history[0] && history[0].score_breakdown && typeof history[0].score_breakdown === 'object')
+    ? history[0].score_breakdown : null;
 
-  const allBreakdowns = history.filter(h => h.score_breakdown && Object.keys(h.score_breakdown).length > 0);
+  const above80 = history.filter(h => h && h.ats_score >= 80).length;
+  const between60and80 = history.filter(h => h && h.ats_score >= 60 && h.ats_score < 80).length;
+  const below60 = history.filter(h => h && h.ats_score < 60).length;
+
+  const allBreakdowns = history.filter(h => {
+    try { return h && h.score_breakdown && typeof h.score_breakdown === 'object' && Object.keys(h.score_breakdown).length > 0; }
+    catch { return false; }
+  });
+
   const avgBreakdown = {};
-  if (allBreakdowns.length > 0) {
-    Object.keys(allBreakdowns[0].score_breakdown).forEach(key => {
-      const sum = allBreakdowns.reduce((acc, h) => acc + (h.score_breakdown[key] || 0), 0);
-      avgBreakdown[key] = Math.round(sum / allBreakdowns.length);
-    });
-  }
+  try {
+    if (allBreakdowns.length > 0 && allBreakdowns[0].score_breakdown) {
+      Object.keys(allBreakdowns[0].score_breakdown).forEach(key => {
+        const sum = allBreakdowns.reduce((acc, h) => acc + ((h.score_breakdown && h.score_breakdown[key]) || 0), 0);
+        avgBreakdown[key] = Math.round(sum / allBreakdowns.length);
+      });
+    }
+  } catch (e) { console.log('Breakdown calc error:', e); }
 
   const spread = high - low;
   const successRate = total > 0 ? Math.round((above80 / total) * 100) : 0;
+  const displayBreakdown = Object.keys(avgBreakdown).length > 0 ? avgBreakdown : latestBreakdown;
 
   if (loading) {
     return (
@@ -450,9 +450,8 @@ export default function DashboardPage() {
           <StatPill label="Analyzed" value={`${total}`} sublabel="resumes" color="var(--amber)" delay={0.25} animated={visible} />
         </div>
 
-        {/* ═══ ROW 2: Score Ring + Donut + Insights ═══ */}
+        {/* ═══ ROW 2: Ring + Donut + Insights ═══ */}
         <div style={{ display: 'grid', gridTemplateColumns: '200px 1fr 1fr', gap: 20, marginBottom: 20 }}>
-          {/* Score Ring */}
           <div style={{
             background: 'var(--surface-card)', border: '0.5px solid var(--border-light)',
             borderRadius: 'var(--radius-xl)', padding: '28px 20px',
@@ -463,7 +462,6 @@ export default function DashboardPage() {
             <ScoreRing score={latest} animated={visible} />
           </div>
 
-          {/* Donut — Quality Split */}
           <div style={{
             background: 'var(--surface-card)', border: '0.5px solid var(--border-light)',
             borderRadius: 'var(--radius-xl)', padding: '24px 28px',
@@ -473,7 +471,6 @@ export default function DashboardPage() {
             <DonutChart excellent={above80} average={between60and80} low={below60} total={total} animated={visible} />
           </div>
 
-          {/* Quick Insights */}
           <div style={{
             background: 'var(--surface-card)', border: '0.5px solid var(--border-light)',
             borderRadius: 'var(--radius-xl)', padding: '24px 20px',
@@ -490,8 +487,8 @@ export default function DashboardPage() {
         {/* ═══ ROW 3: Score Timeline ═══ */}
         <div style={{
           background: 'var(--surface-card)', border: '0.5px solid var(--border-light)',
-          borderRadius: 'var(--radius-xl)', padding: '28px',
-          marginBottom: 20, opacity: visible ? 1 : 0, transition: 'opacity 0.6s ease 0.5s',
+          borderRadius: 'var(--radius-xl)', padding: '28px', marginBottom: 20,
+          opacity: visible ? 1 : 0, transition: 'opacity 0.6s ease 0.5s',
         }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
             <h3 style={{ fontFamily: 'var(--font-body)', fontSize: 15, fontWeight: 500 }}>Score trend</h3>
@@ -500,7 +497,7 @@ export default function DashboardPage() {
           <ScoreTimeline history={history} animated={visible} />
         </div>
 
-        {/* ═══ ROW 4: Distribution + Category Breakdown ═══ */}
+        {/* ═══ ROW 4: Distribution + Categories ═══ */}
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20, marginBottom: 20 }}>
           <div style={{
             background: 'var(--surface-card)', border: '0.5px solid var(--border-light)',
@@ -520,13 +517,12 @@ export default function DashboardPage() {
             <p style={{ fontFamily: 'var(--font-body)', fontSize: 11, color: 'var(--text-tertiary)', marginBottom: 20 }}>
               Averaged across {allBreakdowns.length > 0 ? allBreakdowns.length : 'all'} resumes
             </p>
-            <CategoryRadar breakdown={Object.keys(avgBreakdown).length > 0 ? avgBreakdown : latestBreakdown} animated={visible} />
+            <CategoryRadar breakdown={displayBreakdown} animated={visible} />
           </div>
         </div>
 
         {/* ═══ ROW 5: Percentile + Recommendations ═══ */}
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
-          {/* Percentile */}
           <div style={{
             background: 'var(--surface-card)', border: '0.5px solid var(--border-light)',
             borderRadius: 'var(--radius-xl)', padding: '28px',
@@ -536,7 +532,6 @@ export default function DashboardPage() {
             <p style={{ fontFamily: 'var(--font-body)', fontSize: 12, color: 'var(--text-secondary)', marginBottom: 28 }}>
               {total > 0 ? `Latest score outperforms ${percentile}% of analyzed resumes` : 'Upload a resume to see ranking'}
             </p>
-            {/* Percentile Bar */}
             <div style={{ position: 'relative', marginBottom: 8 }}>
               <div style={{ height: 10, background: 'rgba(0,0,0,0.03)', borderRadius: 5, overflow: 'hidden', position: 'relative' }}>
                 <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, background: 'linear-gradient(90deg, #FF3B30 0%, #FF9F0A 25%, #34C759 60%, #0071E3 100%)', opacity: 0.15, borderRadius: 5 }} />
@@ -559,7 +554,6 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          {/* Recommendations */}
           <div style={{
             background: 'var(--surface-card)', border: '0.5px solid var(--border-light)',
             borderRadius: 'var(--radius-xl)', padding: '28px',
@@ -568,11 +562,11 @@ export default function DashboardPage() {
             <h3 style={{ fontFamily: 'var(--font-body)', fontSize: 15, fontWeight: 500, marginBottom: 20 }}>Recommendations</h3>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
               <InsightCard icon="📝" iconColor="var(--accent)" iconBg="rgba(0,113,227,0.04)"
-                title="Quantify achievements" desc="Add numbers, percentages, and metrics to every bullet point — this is the most common gap." />
+                title="Quantify achievements" desc="Add numbers, percentages, and metrics to every bullet point." />
               <InsightCard icon="🔑" iconColor="#34C759" iconBg="rgba(52,199,89,0.04)"
-                title="Optimize keywords" desc="Mirror exact phrases from job descriptions in your skills and experience sections." />
+                title="Optimize keywords" desc="Mirror exact phrases from job descriptions in skills and experience." />
               <InsightCard icon="✂️" iconColor="#FF9F0A" iconBg="rgba(255,159,10,0.04)"
-                title="Simplify formatting" desc="Remove tables, columns, headers/footers, and images — ATS can't read them." />
+                title="Simplify formatting" desc="Remove tables, columns, headers/footers — ATS can't parse them." />
             </div>
           </div>
         </div>
