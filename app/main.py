@@ -1,6 +1,11 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.routes import resume
+import os
+
+# Create uploads folder if it doesn't exist
+os.makedirs("uploads", exist_ok=True)
+os.makedirs("outputs", exist_ok=True)
 
 app = FastAPI(
     title="AI Resume ATS Scoring System",
@@ -11,6 +16,7 @@ app = FastAPI(
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
+    allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -24,8 +30,6 @@ app.include_router(
 @app.get("/")
 def root():
     return {
-        "message": "AI Resume ATS System is running! 🚀",
-        "version": "1.0.0",
-        "docs": "Visit http://127.0.0.1:8000/docs to test the API",
-        "health": "Visit http://127.0.0.1:8000/api/v1/resume/health"
+        "message": "AI Resume ATS System is running!",
+        "version": "1.0.0"
     }

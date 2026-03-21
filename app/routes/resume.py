@@ -22,44 +22,54 @@ async def upload_and_analyze(file: UploadFile = File(...)):
             detail="Only PDF and DOCX files are allowed"
         )
     
+    # Make sure upload dir exists
+    os.makedirs(UPLOAD_DIR, exist_ok=True)
+    
     # Save uploaded file with unique name
     file_id = str(uuid.uuid4())
     file_path = os.path.join(UPLOAD_DIR, f"{file_id}{ext}")
     
-    with open(file_path, "wb") as buffer:
-        shutil.copyfileobj(file.file, buffer)
+    try:
+        with open(file_path, "wb") as buffer:
+            shutil.copyfileobj(file.file, buffer)
+        
+        print(f"File saved: {file_path}")
+        
+        # Extract text from file
+        extracted_text = extract_text(file_path)
+        
+        if not extracted_text or len(extracted_text) < 50:
+            raise HTTPException(
+                status_code=400,
+                detail="Could not extract text. Please upload a proper PDF or DOCX resume."
+            )
+        
+        print(f"Text extracted successfully — {len(extracted_text)} characters")
+        
+        # Send to AI for ATS analysis
+        analysis = analyze_resume(extracted_text)
+        
+        return {
+            "filename": file.filename,
+            "characters_extracted": len(extracted_text),
+            "text_preview": extracted_text[:300] + "...",
+            "analysis": analysis,
+            "status": "success"
+        }
     
-    print(f"File saved: {file_path}")
-    
-    # Extract text from file
-    extracted_text = extract_text(file_path)
-    
-    if not extracted_text or len(extracted_text) < 50:
-        raise HTTPException(
-            status_code=400,
-            detail="Could not extract text. Please upload a proper PDF or DOCX resume."
-        )
-    
-    print(f"Text extracted successfully — {len(extracted_text)} characters")
-    
-    # Send to Ollama for ATS analysis
-    analysis = analyze_resume(extracted_text)
-    
-    # Clean up uploaded file after analysis
-    os.remove(file_path)
-    
-    return {
-        "filename": file.filename,
-        "characters_extracted": len(extracted_text),
-        "text_preview": extracted_text[:300] + "...",
-        "analysis": analysis,
-        "status": "success ✅"
-    }
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Error processing file: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error processing file: {str(e)}")
+    finally:
+        # Clean up uploaded file
+        if os.path.exists(file_path):
+            os.remove(file_path)
 
 @router.get("/health")
 def health_check():
     return {
-        "status": "Resume API is running ✅",
-        "model": "llama3.1:8b",
-        "ollama_url": "http://localhost:11434"
+        "status": "Resume API is running",
+        "model": "groq/llama-3.1-70b"
     }
