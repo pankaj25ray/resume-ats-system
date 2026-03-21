@@ -23,16 +23,32 @@ GROQ_MODEL = "llama-3.3-70b-versatile"
 # ═══════════════════════════════════════
 
 def get_prompt(resume_text):
-    return f"""You are a professional ATS (Applicant Tracking System) expert.
-Analyze the following resume text and return ONLY a valid JSON object with no extra text, no markdown, no code fences.
+    return f"""You are a strict, professional ATS (Applicant Tracking System) scoring engine.
 
-Resume:
+TASK: Analyze the resume below and provide an accurate ATS compatibility score.
+
+SCORING RULES — Be strict and realistic:
+- keyword_relevance (0-25): Does the resume contain industry-specific keywords? Generic resumes score 10-14.
+- formatting (0-20): Is the formatting ATS-friendly? Tables, images, headers reduce score.
+- section_completeness (0-15): Are all sections present? (Summary, Experience, Education, Skills, Contact)
+- quantification (0-15): Are achievements backed by numbers/metrics? Most resumes score 3-8 here.
+- action_verbs (0-10): Does each bullet start with a strong action verb?
+- grammar_clarity (0-10): Is the writing clear, concise, and error-free?
+- length_density (0-5): Is the resume the right length? (1-2 pages ideal)
+
+IMPORTANT:
+- The ats_score MUST equal the sum of all breakdown scores.
+- Average resumes score 45-65. Only exceptional resumes score above 80.
+- Be honest and critical. Do NOT default to high scores.
+- A resume with generic descriptions and no metrics should score 40-55.
+- A resume with some keywords but weak quantification should score 55-70.
+- Only resumes with strong keywords, metrics, and perfect formatting score 75+.
+
+Resume to analyze:
 {resume_text[:3000]}
 
-Return ONLY this exact JSON structure (no other text before or after):
-{{"ats_score": 72, "score_breakdown": {{"keyword_relevance": 18, "formatting": 16, "section_completeness": 12, "quantification": 10, "action_verbs": 8, "grammar_clarity": 6, "length_density": 2}}, "strengths": ["strength 1", "strength 2", "strength 3"], "weaknesses": ["weakness 1", "weakness 2", "weakness 3"], "suggestions": ["suggestion 1", "suggestion 2", "suggestion 3"], "improved_summary": "An improved professional summary"}}
-
-Replace the example values with your actual analysis. Return ONLY the JSON object."""
+Respond with ONLY this JSON (no other text, no markdown, no code fences):
+{{"ats_score": <SUM OF ALL BREAKDOWN SCORES>, "score_breakdown": {{"keyword_relevance": <0-25>, "formatting": <0-20>, "section_completeness": <0-15>, "quantification": <0-15>, "action_verbs": <0-10>, "grammar_clarity": <0-10>, "length_density": <0-5>}}, "strengths": ["specific strength 1", "specific strength 2", "specific strength 3"], "weaknesses": ["specific weakness 1", "specific weakness 2", "specific weakness 3"], "suggestions": ["actionable suggestion 1", "actionable suggestion 2", "actionable suggestion 3"], "improved_summary": "A rewritten professional summary tailored to this person"}}"""
 
 # ═══════════════════════════════════════
 # OLLAMA (Local)
@@ -64,7 +80,7 @@ def analyze_with_groq(resume_text):
             {"role": "system", "content": "You are an ATS expert. You MUST respond with ONLY a valid JSON object. No markdown, no code fences, no explanation. Just pure JSON."},
             {"role": "user", "content": prompt}
         ],
-        "temperature": 0.1,
+        "temperature": 0.4,
         "max_tokens": 1024
     }
     response = requests.post(GROQ_URL, headers=headers, json=payload, timeout=60)
