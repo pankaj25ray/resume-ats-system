@@ -61,88 +61,80 @@ function ScoreDistribution({ history, animated }) {
 }
 
 /* ═══════════════════════════════════════
-   SCORE TREND (Line-style dots)
+   SCORE TREND (Bar chart - last 10)
    ═══════════════════════════════════════ */
 function ScoreTrend({ history, animated }) {
   const recent = [...history].slice(0, 10).reverse();
+
   if (recent.length === 0) {
-    return <p style={{ fontFamily: 'var(--font-body)', fontSize: 14, color: 'var(--text-tertiary)', textAlign: 'center', padding: '40px 0' }}>No data yet — upload resumes to see trends</p>;
+    return <p style={{ fontFamily: 'var(--font-body)', fontSize: 14, color: 'var(--text-tertiary)', textAlign: 'center', padding: '60px 0' }}>No data yet — upload resumes to see trends</p>;
   }
 
   const maxScore = 100;
-  const minScore = 0;
-  const chartHeight = 160;
-  const chartWidth = 100;
 
   return (
-    <div style={{ position: 'relative', height: chartHeight + 40, padding: '0 8px' }}>
-      {/* Grid lines */}
-      {[100, 80, 60, 40, 20].map(line => {
-        const y = chartHeight - ((line - minScore) / (maxScore - minScore)) * chartHeight;
-        return (
-          <div key={line} style={{ position: 'absolute', top: y, left: 30, right: 0, display: 'flex', alignItems: 'center', gap: 8 }}>
-            <span style={{ fontFamily: 'var(--font-body)', fontSize: 10, color: 'var(--text-tertiary)', width: 20, textAlign: 'right' }}>{line}</span>
-            <div style={{ flex: 1, height: 0.5, background: 'rgba(0,0,0,0.06)' }} />
+    <div>
+      {/* Chart */}
+      <div style={{ display: 'flex', alignItems: 'flex-end', gap: 6, height: 150, padding: '0 4px' }}>
+        {recent.map((d, i) => {
+          const height = Math.max((d.ats_score / maxScore) * 130, 4);
+          const color = d.ats_score >= 80 ? 'var(--green)' : d.ats_score >= 60 ? 'var(--accent)' : d.ats_score >= 40 ? 'var(--amber)' : 'var(--red)';
+          return (
+            <div key={i} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
+              <span style={{
+                fontFamily: 'var(--font-body)', fontSize: 11, fontWeight: 500, color: 'var(--text-primary)',
+                opacity: animated ? 1 : 0,
+                transition: `opacity 0.4s ease ${i * 0.08 + 0.5}s`,
+              }}>
+                {d.ats_score}
+              </span>
+              <div style={{
+                width: '100%', maxWidth: 32, borderRadius: '6px 6px 2px 2px',
+                background: color,
+                height: animated ? height : 0,
+                transition: `height 0.8s cubic-bezier(0.4,0,0.2,1) ${i * 0.08}s`,
+              }} />
+            </div>
+          );
+        })}
+      </div>
+      {/* Labels */}
+      <div style={{ display: 'flex', gap: 6, padding: '6px 4px 0', borderTop: '0.5px solid var(--border-light)', marginTop: 8 }}>
+        {recent.map((d, i) => (
+          <div key={i} style={{ flex: 1, textAlign: 'center' }}>
+            <span style={{ fontFamily: 'var(--font-body)', fontSize: 9, color: 'var(--text-tertiary)' }}>
+              {d.created_at ? new Date(d.created_at).toLocaleDateString('en', { day: 'numeric', month: 'short' }) : `#${i+1}`}
+            </span>
           </div>
-        );
-      })}
-
-      {/* Dots and connecting lines */}
-      <svg style={{ position: 'absolute', top: 0, left: 50, right: 0, height: chartHeight }} viewBox={`0 0 ${recent.length * 50} ${chartHeight}`} preserveAspectRatio="none">
-        {recent.map((d, i) => {
-          if (i === 0) return null;
-          const prevY = chartHeight - ((recent[i-1].ats_score / maxScore) * chartHeight);
-          const currY = chartHeight - ((d.ats_score / maxScore) * chartHeight);
-          const prevX = (i - 1) * 50 + 25;
-          const currX = i * 50 + 25;
-          return (
-            <line key={`line-${i}`} x1={prevX} y1={prevY} x2={currX} y2={currY}
-              stroke="var(--accent)" strokeWidth="2" strokeLinecap="round"
-              opacity={animated ? 0.3 : 0}
-              style={{ transition: `opacity 0.5s ease ${i * 0.1}s` }}
-            />
-          );
-        })}
-        {recent.map((d, i) => {
-          const y = chartHeight - ((d.ats_score / maxScore) * chartHeight);
-          const x = i * 50 + 25;
-          const color = d.ats_score >= 80 ? 'var(--green)' : d.ats_score >= 60 ? 'var(--accent)' : 'var(--amber)';
-          return (
-            <g key={`dot-${i}`}>
-              <circle cx={x} cy={y} r={animated ? 6 : 0} fill={color}
-                style={{ transition: `r 0.4s ease ${i * 0.1}s` }}
-              />
-              <text x={x} y={y - 12} textAnchor="middle"
-                style={{ fontFamily: 'var(--font-body)', fontSize: 11, fontWeight: 500, fill: 'var(--text-primary)',
-                  opacity: animated ? 1 : 0, transition: `opacity 0.4s ease ${i * 0.1 + 0.2}s` }}
-              >{d.ats_score}</text>
-            </g>
-          );
-        })}
-      </svg>
+        ))}
+      </div>
     </div>
   );
 }
 
 /* ═══════════════════════════════════════
-   MINI SCORE RING
+   SCORE RING (with counter animation)
    ═══════════════════════════════════════ */
-function MiniScoreRing({ score, size = 120, animated }) {
+function ScoreRing({ score, size = 120 }) {
+  const [animated, setAnimated] = useState(false);
+  const [displayScore, setDisplayScore] = useState(0);
   const circumference = 2 * Math.PI * 36;
   const offset = circumference - (score / 100) * circumference;
   const color = score >= 80 ? 'var(--green)' : score >= 60 ? 'var(--accent)' : score >= 40 ? 'var(--amber)' : 'var(--red)';
-  const [displayScore, setDisplayScore] = useState(0);
 
   useEffect(() => {
-    if (!animated) return;
-    let current = 0;
-    const interval = setInterval(() => {
-      current = Math.min(current + 1, score);
-      setDisplayScore(current);
-      if (current >= score) clearInterval(interval);
-    }, 20);
-    return () => clearInterval(interval);
-  }, [animated, score]);
+    const timer = setTimeout(() => {
+      setAnimated(true);
+      let current = 0;
+      const interval = setInterval(() => {
+        current = Math.min(current + 1, score);
+        setDisplayScore(current);
+        if (current >= score) clearInterval(interval);
+      }, 20);
+      return () => clearInterval(interval);
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [score]);
 
   return (
     <div style={{ position: 'relative', width: size, height: size }}>
@@ -157,6 +149,7 @@ function MiniScoreRing({ score, size = 120, animated }) {
       <div style={{
         position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)',
         fontFamily: 'var(--font-display)', fontSize: 24, fontWeight: 500,
+        color: 'var(--text-primary)',
       }}>
         {displayScore}
       </div>
@@ -273,7 +266,6 @@ export default function DashboardPage() {
   const between60and80 = history.filter(h => h.ats_score >= 60 && h.ats_score < 80).length;
   const below60 = history.filter(h => h.ats_score < 60).length;
 
-  // Calculate average per category from all resumes that have breakdown
   const allBreakdowns = history.filter(h => h.score_breakdown && Object.keys(h.score_breakdown).length > 0);
   const avgBreakdown = {};
   if (allBreakdowns.length > 0) {
@@ -307,21 +299,13 @@ export default function DashboardPage() {
       <div style={{ maxWidth: 1060, margin: '0 auto', padding: '120px 24px 80px' }}>
         {/* Header */}
         <div className="animate-fade-up" style={{ marginBottom: 40 }}>
-          <div style={{ fontFamily: 'var(--font-body)', fontSize: 12, fontWeight: 500, color: 'var(--accent)', textTransform: 'uppercase', letterSpacing: 1.5, marginBottom: 12 }}>
-            Dashboard
-          </div>
-          <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 44, fontWeight: 400, letterSpacing: -1, marginBottom: 8 }}>
-            Resume analytics
-          </h1>
-          <p style={{ fontFamily: 'var(--font-body)', fontSize: 16, color: 'var(--text-secondary)' }}>
-            {totalResumes} resumes analyzed — all data is anonymous
-          </p>
+          <div style={{ fontFamily: 'var(--font-body)', fontSize: 12, fontWeight: 500, color: 'var(--accent)', textTransform: 'uppercase', letterSpacing: 1.5, marginBottom: 12 }}>Dashboard</div>
+          <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 44, fontWeight: 400, letterSpacing: -1, marginBottom: 8 }}>Resume analytics</h1>
+          <p style={{ fontFamily: 'var(--font-body)', fontSize: 16, color: 'var(--text-secondary)' }}>{totalResumes} resumes analyzed — all data is anonymous</p>
         </div>
 
         {error && (
-          <div style={{ padding: '16px 20px', marginBottom: 24, background: 'rgba(255,159,10,0.06)', border: '0.5px solid rgba(255,159,10,0.15)', borderRadius: 'var(--radius-md)', fontFamily: 'var(--font-body)', fontSize: 14, color: 'var(--amber)' }}>
-            {error}
-          </div>
+          <div style={{ padding: '16px 20px', marginBottom: 24, background: 'rgba(255,159,10,0.06)', border: '0.5px solid rgba(255,159,10,0.15)', borderRadius: 'var(--radius-md)', fontFamily: 'var(--font-body)', fontSize: 14, color: 'var(--amber)' }}>{error}</div>
         )}
 
         {/* Row 1 — Key Metrics */}
@@ -357,7 +341,7 @@ export default function DashboardPage() {
             display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
           }}>
             <div style={{ fontFamily: 'var(--font-body)', fontSize: 11, color: 'var(--text-tertiary)', marginBottom: 12, textTransform: 'uppercase', letterSpacing: 1 }}>Latest score</div>
-            <MiniScoreRing score={latestScore} size={120} animated={visible} />
+            <ScoreRing score={latestScore} size={120} />
             <div style={{
               marginTop: 12, fontFamily: 'var(--font-body)', fontSize: 12, fontWeight: 500,
               color: latestScore >= 80 ? 'var(--green)' : latestScore >= 60 ? 'var(--accent)' : 'var(--amber)',
@@ -399,7 +383,7 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          {/* Score Trend (replaces Recent Scores) */}
+          {/* Score Trend */}
           <div className="animate-fade-up stagger-4" style={{
             background: 'var(--surface-card)', border: '0.5px solid var(--border-light)',
             borderRadius: 'var(--radius-xl)', padding: '24px',
@@ -424,7 +408,7 @@ export default function DashboardPage() {
             borderRadius: 'var(--radius-xl)', padding: '28px',
           }}>
             <h3 style={{ fontFamily: 'var(--font-body)', fontSize: 15, fontWeight: 500, marginBottom: 4 }}>Average category scores</h3>
-            <p style={{ fontFamily: 'var(--font-body)', fontSize: 12, color: 'var(--text-tertiary)', marginBottom: 20 }}>Across all {allBreakdowns.length} resumes with breakdown data</p>
+            <p style={{ fontFamily: 'var(--font-body)', fontSize: 12, color: 'var(--text-tertiary)', marginBottom: 20 }}>Across {allBreakdowns.length} resumes with breakdown data</p>
             <CategoryBars breakdown={Object.keys(avgBreakdown).length > 0 ? avgBreakdown : latestBreakdown} animated={visible} />
           </div>
         </div>
