@@ -1,54 +1,104 @@
-from fastapi import APIRouter, UploadFile, File, HTTPException
+from fastapi import APIRouter, UploadFile, File, HTTPException, Depends
+from sqlalchemy.orm import Session
+from sqlalchemy import func
 import shutil
 import os
 import uuid
 from app.services.parser import extract_text
 from app.services.llm import analyze_resume
+from app.database import get_db, ResumeAnalysis, User, ScoreStats
+from datetime import datetime
 
 router = APIRouter()
 
 UPLOAD_DIR = "uploads"
 
 @router.post("/upload-and-analyze")
-async def upload_and_analyze(file: UploadFile = File(...)):
-    
+async def upload_and_analyze(
+    file: UploadFile = File(...),
+    email: str = None,
+    db: Session = Depends(get_db)
+):
     # Validate file type
     allowed_extensions = [".pdf", ".docx", ".doc"]
     ext = os.path.splitext(file.filename)[1].lower()
-    
+
     if ext not in allowed_extensions:
-        raise HTTPException(
-            status_code=400,
-            detail="Only PDF and DOCX files are allowed"
-        )
-    
-    # Make sure upload dir exists
+        raise HTTPException(status_code=400, detail="Only PDF and DOCX files are allowed")
+
     os.makedirs(UPLOAD_DIR, exist_ok=True)
-    
-    # Save uploaded file with unique name
+
     file_id = str(uuid.uuid4())
     file_path = os.path.join(UPLOAD_DIR, f"{file_id}{ext}")
-    
+
     try:
         with open(file_path, "wb") as buffer:
             shutil.copyfileobj(file.file, buffer)
-        
-        print(f"File saved: {file_path}")
-        
-        # Extract text from file
+
         extracted_text = extract_text(file_path)
-        
+
         if not extracted_text or len(extracted_text) < 50:
-            raise HTTPException(
-                status_code=400,
-                detail="Could not extract text. Please upload a proper PDF or DOCX resume."
-            )
-        
-        print(f"Text extracted successfully — {len(extracted_text)} characters")
-        
-        # Send to AI for ATS analysis
+            raise HTTPException(status_code=400, detail="Could not extract text from file.")
+
+        # AI Analysis
         analysis = analyze_resume(extracted_text)
-        
+
+        # Save to database
+        try:
+            resume_record = ResumeAnalysis(
+                user_email=email,
+                filename=file.filename,
+                ats_score=analysis.get("ats_score", 0),
+                score_breakdown=analysis.get("score_breakdown", {}),
+                strengths=analysis.get("strengths", []),
+                weaknesses=analysis.get("weaknesses", []),
+                suggestions=analysis.get("suggestions", []),
+                improved_summary=analysis.get("improved_summary", ""),
+                text_preview=extracted_text[:300],
+                characters_extracted=len(extracted_text),
+                created_at=datetime.utcnow()
+            )
+            db.add(resume_record)
+
+            # Update global stats
+            total = db.query(func.count(ResumeAnalysis.id)).scalar() or 0
+            avg = db.query(func.avg(ResumeAnalysis.ats_score)).scalar() or 0
+            highest = db.query(func.max(ResumeAnalysis.ats_score)).scalar() or 0
+            lowest = db.query(func.min(ResumeAnalysis.ats_score)).scalar() or 100
+
+            stats = db.query(ScoreStats).first()
+            if stats:
+                stats.total_resumes = total + 1
+                stats.average_score = round(float(avg), 1)
+                stats.highest_score = highest
+                stats.lowest_score = lowest
+                stats.updated_at = datetime.utcnow()
+            else:
+                stats = ScoreStats(
+                    total_resumes=1,
+                    average_score=float(analysis.get("ats_score", 0)),
+                    highest_score=analysis.get("ats_score", 0),
+                    lowest_score=analysis.get("ats_score", 0),
+                    updated_at=datetime.utcnow()
+                )
+                db.add(stats)
+
+            # Update user if email provided
+            if email:
+                user = db.query(User).filter(User.email == email).first()
+                if user:
+                    user.total_uploads += 1
+                else:
+                    user = User(email=email, total_uploads=1)
+                    db.add(user)
+
+            db.commit()
+            print("Data saved to database!")
+
+        except Exception as db_error:
+            print(f"Database save error: {str(db_error)}")
+            db.rollback()
+
         return {
             "filename": file.filename,
             "characters_extracted": len(extracted_text),
@@ -56,20 +106,60 @@ async def upload_and_analyze(file: UploadFile = File(...)):
             "analysis": analysis,
             "status": "success"
         }
-    
+
     except HTTPException:
         raise
     except Exception as e:
-        print(f"Error processing file: {str(e)}")
+        print(f"Error: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Error processing file: {str(e)}")
     finally:
-        # Clean up uploaded file
         if os.path.exists(file_path):
             os.remove(file_path)
 
 @router.get("/health")
 def health_check():
+    return {"status": "Resume API is running", "model": "groq/llama-3.3-70b"}
+
+@router.get("/stats")
+def get_stats(db: Session = Depends(get_db)):
+    stats = db.query(ScoreStats).first()
+    total = db.query(func.count(ResumeAnalysis.id)).scalar() or 0
+    recent = db.query(ResumeAnalysis).order_by(ResumeAnalysis.created_at.desc()).limit(10).all()
+
     return {
-        "status": "Resume API is running",
-        "model": "groq/llama-3.1-70b"
+        "total_resumes": total,
+        "average_score": round(float(stats.average_score), 1) if stats else 0,
+        "highest_score": stats.highest_score if stats else 0,
+        "lowest_score": stats.lowest_score if stats else 0,
+        "recent_analyses": [
+            {
+                "filename": r.filename,
+                "ats_score": r.ats_score,
+                "created_at": r.created_at.isoformat() if r.created_at else None
+            }
+            for r in recent
+        ]
+    }
+
+@router.get("/history")
+def get_history(email: str = None, db: Session = Depends(get_db)):
+    query = db.query(ResumeAnalysis).order_by(ResumeAnalysis.created_at.desc())
+    if email:
+        query = query.filter(ResumeAnalysis.user_email == email)
+    results = query.limit(20).all()
+
+    return {
+        "history": [
+            {
+                "id": r.id,
+                "filename": r.filename,
+                "ats_score": r.ats_score,
+                "strengths": r.strengths,
+                "weaknesses": r.weaknesses,
+                "suggestions": r.suggestions,
+                "improved_summary": r.improved_summary,
+                "created_at": r.created_at.isoformat() if r.created_at else None
+            }
+            for r in results
+        ]
     }

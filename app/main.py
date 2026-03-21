@@ -1,15 +1,16 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.routes import resume
+from app.database import init_db
 import os
 
-# Create uploads folder if it doesn't exist
+# Create folders
 os.makedirs("uploads", exist_ok=True)
 os.makedirs("outputs", exist_ok=True)
 
 app = FastAPI(
     title="AI Resume ATS Scoring System",
-    description="Upload your resume and get ATS score powered by LLaMA 3.1",
+    description="Upload your resume and get ATS score powered by LLaMA 3.3",
     version="1.0.0"
 )
 
@@ -20,6 +21,11 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Initialize database tables on startup
+@app.on_event("startup")
+def startup():
+    init_db()
 
 app.include_router(
     resume.router,
