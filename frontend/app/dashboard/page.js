@@ -5,43 +5,53 @@ import Navbar from '../components/Navbar';
 const API_URL = 'https://resume-ats-backend-drnu.onrender.com/api/v1/resume';
 
 /* ═══════════════════════════════════════
-   SCORE DISTRIBUTION
+   SCORE DISTRIBUTION (from backend stats)
    ═══════════════════════════════════════ */
-function ScoreDistribution({ history, animated }) {
+function ScoreDistribution({ distribution, total, animated }) {
   const ranges = [
-    { label: '90-100', min: 90, max: 100, color: '#0071E3' },
-    { label: '80-89', min: 80, max: 89, color: '#34C759' },
-    { label: '70-79', min: 70, max: 79, color: '#5AC8FA' },
-    { label: '60-69', min: 60, max: 69, color: '#FF9F0A' },
-    { label: '50-59', min: 50, max: 59, color: '#FF9500' },
-    { label: '0-49', min: 0, max: 49, color: '#FF3B30' },
+    { label: '90-100', key: '90-100', color: '#0071E3' },
+    { label: '80-89', key: '80-89', color: '#34C759' },
+    { label: '70-79', key: '70-79', color: '#5AC8FA' },
+    { label: '60-69', key: '60-69', color: '#FF9F0A' },
+    { label: '50-59', key: '50-59', color: '#FF9500' },
+    { label: '0-49', key: '0-49', color: '#FF3B30' },
   ];
+
   const counts = ranges.map(r => ({
     ...r,
-    count: history.filter(h => h.ats_score >= r.min && h.ats_score <= r.max).length
+    count: distribution ? (distribution[r.key] || 0) : 0
   }));
-  const total = history.length || 1;
+  const maxCount = Math.max(...counts.map(c => c.count), 1);
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
       {counts.map((r, i) => {
-        const pct = (r.count / total) * 100;
+        const pct = (r.count / maxCount) * 100;
         return (
           <div key={r.label} style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
             <span style={{ fontFamily: 'var(--font-body)', fontSize: 12, color: 'var(--text-secondary)', width: 48, textAlign: 'right', flexShrink: 0 }}>{r.label}</span>
-            <div style={{ flex: 1, height: 28, background: 'rgba(0,0,0,0.03)', borderRadius: 8, overflow: 'hidden' }}>
+            <div style={{ flex: 1, height: 28, background: 'rgba(0,0,0,0.03)', borderRadius: 8, overflow: 'hidden', position: 'relative' }}>
               <div style={{
                 height: '100%', borderRadius: 8, background: r.color,
-                width: animated ? `${Math.max(pct, r.count > 0 ? 15 : 0)}%` : '0%',
+                width: animated ? `${Math.max(pct, r.count > 0 ? 12 : 0)}%` : '0%',
                 transition: `width 1s cubic-bezier(0.4,0,0.2,1) ${i * 0.12}s`,
-                display: 'flex', alignItems: 'center', paddingLeft: 10, position: 'relative',
+                display: 'flex', alignItems: 'center', paddingLeft: 10,
               }}>
-                {r.count > 0 && <span style={{ fontFamily: 'var(--font-body)', fontSize: 11, fontWeight: 500, color: pct > 25 ? '#fff' : r.color, position: pct > 25 ? 'static' : 'absolute', left: pct > 25 ? 'auto' : `${Math.max(pct, 15)}%`, marginLeft: pct > 25 ? 0 : 8 }}>{r.count}</span>}
+                {r.count > 0 && pct > 25 && <span style={{ fontFamily: 'var(--font-body)', fontSize: 11, fontWeight: 500, color: '#fff' }}>{r.count}</span>}
               </div>
+              {r.count > 0 && pct <= 25 && (
+                <span style={{
+                  position: 'absolute', left: `${Math.max(pct, 12) + 2}%`, top: '50%', transform: 'translateY(-50%)',
+                  fontFamily: 'var(--font-body)', fontSize: 11, fontWeight: 500, color: r.color
+                }}>{r.count}</span>
+              )}
             </div>
           </div>
         );
       })}
+      <div style={{ fontFamily: 'var(--font-body)', fontSize: 11, color: 'var(--text-tertiary)', textAlign: 'right', marginTop: 4 }}>
+        Total: {total} resumes
+      </div>
     </div>
   );
 }
@@ -248,9 +258,11 @@ export default function DashboardPage() {
   const percentile = totalResumes > 0 ? Math.min(Math.round((latestScore / 100) * 100), 99) : 0;
   const latestBreakdown = history.length > 0 ? history[0].score_breakdown : null;
 
-  const above80 = history.filter(h => h.ats_score >= 80).length;
-  const between60and80 = history.filter(h => h.ats_score >= 60 && h.ats_score < 80).length;
-  const below60 = history.filter(h => h.ats_score < 60).length;
+  // Use backend stats for accurate counts across ALL resumes
+  const dist = stats?.score_distribution || {};
+  const above80 = (dist['90-100'] || 0) + (dist['80-89'] || 0);
+  const between60and80 = (dist['70-79'] || 0) + (dist['60-69'] || 0);
+  const below60 = (dist['50-59'] || 0) + (dist['0-49'] || 0);
 
   const allBreakdowns = history.filter(h => h.score_breakdown && Object.keys(h.score_breakdown).length > 0);
   const avgBreakdown = {};
@@ -377,7 +389,7 @@ export default function DashboardPage() {
             background: '#fff', border: '0.5px solid rgba(0,0,0,0.06)', borderRadius: 20, padding: '28px',
           }}>
             <h3 style={{ fontFamily: 'var(--font-body)', fontSize: 15, fontWeight: 500, marginBottom: 20 }}>Score distribution</h3>
-            <ScoreDistribution history={history} animated={pageReady} />
+            <ScoreDistribution distribution={stats?.score_distribution} total={totalResumes} animated={pageReady} />
           </div>
 
           <div className="animate-fade-up stagger-6" style={{

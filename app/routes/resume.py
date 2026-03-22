@@ -120,25 +120,33 @@ async def upload_and_analyze(
 def health_check():
     return {"status": "Resume API is running", "model": "groq/llama-3.3-70b"}
 
+
 @router.get("/stats")
 def get_stats(db: Session = Depends(get_db)):
     stats = db.query(ScoreStats).first()
     total = db.query(func.count(ResumeAnalysis.id)).scalar() or 0
-    recent = db.query(ResumeAnalysis).order_by(ResumeAnalysis.created_at.desc()).limit(10).all()
+    
+    # Score distribution - count all resumes in each range
+    dist_90_100 = db.query(func.count(ResumeAnalysis.id)).filter(ResumeAnalysis.ats_score >= 90).scalar() or 0
+    dist_80_89 = db.query(func.count(ResumeAnalysis.id)).filter(ResumeAnalysis.ats_score >= 80, ResumeAnalysis.ats_score < 90).scalar() or 0
+    dist_70_79 = db.query(func.count(ResumeAnalysis.id)).filter(ResumeAnalysis.ats_score >= 70, ResumeAnalysis.ats_score < 80).scalar() or 0
+    dist_60_69 = db.query(func.count(ResumeAnalysis.id)).filter(ResumeAnalysis.ats_score >= 60, ResumeAnalysis.ats_score < 70).scalar() or 0
+    dist_50_59 = db.query(func.count(ResumeAnalysis.id)).filter(ResumeAnalysis.ats_score >= 50, ResumeAnalysis.ats_score < 60).scalar() or 0
+    dist_0_49 = db.query(func.count(ResumeAnalysis.id)).filter(ResumeAnalysis.ats_score < 50).scalar() or 0
 
     return {
         "total_resumes": total,
         "average_score": round(float(stats.average_score), 1) if stats else 0,
         "highest_score": stats.highest_score if stats else 0,
         "lowest_score": stats.lowest_score if stats else 0,
-        "recent_analyses": [
-            {
-                "filename": r.filename,
-                "ats_score": r.ats_score,
-                "created_at": r.created_at.isoformat() if r.created_at else None
-            }
-            for r in recent
-        ]
+        "score_distribution": {
+            "90-100": dist_90_100,
+            "80-89": dist_80_89,
+            "70-79": dist_70_79,
+            "60-69": dist_60_69,
+            "50-59": dist_50_59,
+            "0-49": dist_0_49
+        }
     }
 
 @router.get("/history")
