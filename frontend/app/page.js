@@ -141,11 +141,11 @@ export default function Home() {
 
   const features = [
     { icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#0071E3" strokeWidth="1.8"><path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>, iconBg: 'rgba(0,113,227,0.08)', title: 'Instant ATS scoring', desc: 'Get a score from 0-100 with detailed breakdown across 7 categories — keywords, formatting, impact, and more.' },
-    { icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#34C759" strokeWidth="1.8"><path d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>, iconBg: 'rgba(52,199,89,0.08)', title: 'AI-powered rewriting', desc: 'LLaMA rewrites weak bullet points, adds missing keywords, and generates an improved professional summary.' },
+    { icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#34C759" strokeWidth="1.8"><path d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>, iconBg: 'rgba(52,199,89,0.08)', title: 'AI-powered rewriting', desc: 'AI rewrites weak bullet points, adds missing keywords, and generates an improved professional summary.' },
     { icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#AF52DE" strokeWidth="1.8"><path d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>, iconBg: 'rgba(175,82,222,0.08)', title: 'Editable DOCX output', desc: 'Download your corrected resume as an editable Word document, ready to customize and submit.' },
     { icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#FF9F0A" strokeWidth="1.8"><path d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>, iconBg: 'rgba(255,159,10,0.08)', title: 'Score analytics', desc: 'Track your resume improvements over time with visual charts and percentile benchmarking.' },
-    { icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#FF2D55" strokeWidth="1.8"><path d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>, iconBg: 'rgba(255,45,85,0.08)', title: '100% private', desc: 'Your resume is processed securely. Privacy-first architecture with encrypted connections..' },
-    { icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#5AC8FA" strokeWidth="1.8"><path d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>, iconBg: 'rgba(90,200,250,0.08)', title: 'Zero cost', desc: 'No API keys, no subscriptions. Built entirely on free-tier tools — Ollama, FastAPI, and Next.js.' },
+    { icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#FF2D55" strokeWidth="1.8"><path d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>, iconBg: 'rgba(255,45,85,0.08)', title: '100% private', desc: 'Your resume is processed securely and never stored permanently. Your data stays private with enterprise-grade encryption.' },
+    { icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#5AC8FA" strokeWidth="1.8"><path d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>, iconBg: 'rgba(90,200,250,0.08)', title: 'Zero cost', desc: 'Completely free to use. No subscriptions, no hidden fees, no credit card required. Ever.' },
   ];
 
   return (
@@ -332,7 +332,7 @@ export default function Home() {
         <div style={{ display: 'flex', flexDirection: 'column', position: 'relative' }}>
           <div style={{ position: 'absolute', left: 24, top: 24, bottom: 24, width: 1, background: 'var(--border-light)' }} />
           <StepCard num="1" title="Upload your resume" desc="Drag and drop your PDF or DOCX file. Our parser extracts every detail — text, sections, formatting — using PyMuPDF and python-docx." delay={0} />
-          <StepCard num="2" title="AI analyzes and scores" desc="LLaMA 3.1 evaluates your resume across 7 dimensions — keyword relevance, quantified achievements, action verbs, section completeness, and more." delay={0.15} />
+          <StepCard num="2" title="AI analyzes and scores" desc="Latest AI models evaluates your resume across 7 dimensions — keyword relevance, quantified achievements, action verbs, section completeness, and more." delay={0.15} />
           <StepCard num="3" title="Get your improved resume" desc="Review strengths, weaknesses, and actionable suggestions. Download an AI-improved version as an editable DOCX — ready to submit." delay={0.3} />
         </div>
       </section>
@@ -395,7 +395,7 @@ export default function Home() {
         maxWidth: 1100, margin: '0 auto',
       }}>
         <div style={{ fontFamily: 'var(--font-body)', fontSize: 13, color: 'var(--text-tertiary)' }}>
-          ResumeAI — Powered by Advanced AI
+          ResumeAI — ResumeAI — Your AI career coach
         </div>
         <div style={{ display: 'flex', gap: 24 }}>
           {['Privacy', 'GitHub', 'Contact'].map(link => (
