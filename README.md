@@ -47,5 +47,6 @@ ollama pull llama3.1:8b
 - **Member 1**: Frontend + Backend Development
 - **Member 2**: AI/LLM Integration + Analytics
 
+
 ## License
 MIT
