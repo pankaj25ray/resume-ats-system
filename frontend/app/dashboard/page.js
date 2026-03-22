@@ -256,7 +256,6 @@ export default function DashboardPage() {
   const highestScore = stats?.highest_score || 0;
   const lowestScore = stats?.lowest_score || 0;
   const percentile = totalResumes > 0 ? Math.min(Math.round((latestScore / 100) * 100), 99) : 0;
-  const latestBreakdown = history.length > 0 ? history[0].score_breakdown : null;
 
   // Use backend stats for accurate counts across ALL resumes
   const dist = stats?.score_distribution || {};
@@ -264,15 +263,9 @@ export default function DashboardPage() {
   const between60and80 = (dist['70-79'] || 0) + (dist['60-69'] || 0);
   const below60 = (dist['50-59'] || 0) + (dist['0-49'] || 0);
 
-  const allBreakdowns = history.filter(h => h.score_breakdown && Object.keys(h.score_breakdown).length > 0);
-  const avgBreakdown = {};
-  if (allBreakdowns.length > 0) {
-    const keys = Object.keys(allBreakdowns[0].score_breakdown);
-    keys.forEach(key => {
-      const sum = allBreakdowns.reduce((acc, h) => acc + (h.score_breakdown[key] || 0), 0);
-      avgBreakdown[key] = Math.round(sum / allBreakdowns.length);
-    });
-  }
+  // Use backend avg categories across ALL resumes
+  const avgBreakdown = stats?.avg_categories || {};
+  const resumesWithBreakdown = stats?.resumes_with_breakdown || 0;
 
   if (loading) {
     return (
@@ -396,8 +389,8 @@ export default function DashboardPage() {
             background: '#fff', border: '0.5px solid rgba(0,0,0,0.06)', borderRadius: 20, padding: '28px',
           }}>
             <h3 style={{ fontFamily: 'var(--font-body)', fontSize: 15, fontWeight: 500, marginBottom: 4 }}>Average category scores</h3>
-            <p style={{ fontFamily: 'var(--font-body)', fontSize: 12, color: 'var(--text-tertiary)', marginBottom: 20 }}>Across {allBreakdowns.length} resumes</p>
-            <CategoryBars breakdown={Object.keys(avgBreakdown).length > 0 ? avgBreakdown : latestBreakdown} animated={pageReady} />
+            <p style={{ fontFamily: 'var(--font-body)', fontSize: 12, color: 'var(--text-tertiary)', marginBottom: 20 }}>Across all {resumesWithBreakdown} resumes</p>
+            <CategoryBars breakdown={Object.keys(avgBreakdown).length > 0 ? avgBreakdown : (history.length > 0 ? history[0].score_breakdown : null)} animated={pageReady} />
           </div>
         </div>
 

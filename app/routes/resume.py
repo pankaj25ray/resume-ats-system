@@ -120,19 +120,35 @@ async def upload_and_analyze(
 def health_check():
     return {"status": "Resume API is running", "model": "groq/llama-3.3-70b"}
 
-
 @router.get("/stats")
 def get_stats(db: Session = Depends(get_db)):
     stats = db.query(ScoreStats).first()
     total = db.query(func.count(ResumeAnalysis.id)).scalar() or 0
     
-    # Score distribution - count all resumes in each range
+    # Score distribution
     dist_90_100 = db.query(func.count(ResumeAnalysis.id)).filter(ResumeAnalysis.ats_score >= 90).scalar() or 0
     dist_80_89 = db.query(func.count(ResumeAnalysis.id)).filter(ResumeAnalysis.ats_score >= 80, ResumeAnalysis.ats_score < 90).scalar() or 0
     dist_70_79 = db.query(func.count(ResumeAnalysis.id)).filter(ResumeAnalysis.ats_score >= 70, ResumeAnalysis.ats_score < 80).scalar() or 0
     dist_60_69 = db.query(func.count(ResumeAnalysis.id)).filter(ResumeAnalysis.ats_score >= 60, ResumeAnalysis.ats_score < 70).scalar() or 0
     dist_50_59 = db.query(func.count(ResumeAnalysis.id)).filter(ResumeAnalysis.ats_score >= 50, ResumeAnalysis.ats_score < 60).scalar() or 0
     dist_0_49 = db.query(func.count(ResumeAnalysis.id)).filter(ResumeAnalysis.ats_score < 50).scalar() or 0
+
+    # Average category scores across ALL resumes
+    all_resumes = db.query(ResumeAnalysis).filter(ResumeAnalysis.score_breakdown != None).all()
+    avg_categories = {}
+    if all_resumes:
+        category_totals = {}
+        count_with_breakdown = 0
+        for r in all_resumes:
+            if r.score_breakdown and isinstance(r.score_breakdown, dict) and len(r.score_breakdown) > 0:
+                count_with_breakdown += 1
+                for key, value in r.score_breakdown.items():
+                    if key not in category_totals:
+                        category_totals[key] = 0
+                    category_totals[key] += value
+        if count_with_breakdown > 0:
+            for key, total_val in category_totals.items():
+                avg_categories[key] = round(total_val / count_with_breakdown)
 
     return {
         "total_resumes": total,
@@ -146,7 +162,9 @@ def get_stats(db: Session = Depends(get_db)):
             "60-69": dist_60_69,
             "50-59": dist_50_59,
             "0-49": dist_0_49
-        }
+        },
+        "avg_categories": avg_categories,
+        "resumes_with_breakdown": len([r for r in all_resumes if r.score_breakdown and isinstance(r.score_breakdown, dict) and len(r.score_breakdown) > 0])
     }
 
 @router.get("/history")
