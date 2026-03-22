@@ -395,7 +395,7 @@ export default function Home() {
         maxWidth: 1100, margin: '0 auto',
       }}>
         <div style={{ fontFamily: 'var(--font-body)', fontSize: 13, color: 'var(--text-tertiary)' }}>
-          ResumeAI — ResumeAI — Your AI career coach
+          ResumeAI — Your AI career coach
         </div>
         <div style={{ display: 'flex', gap: 24 }}>
           {['Privacy', 'GitHub', 'Contact'].map(link => (
